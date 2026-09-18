@@ -5,11 +5,12 @@ from PIL import Image
 # ตั้งค่าหน้าเว็บ
 st.set_page_config(page_title="GlamAI : AI Beauty Advisor", page_icon="🎀", layout="centered")
 
-# CSS ตกแต่งธีมโครงงาน
+# CSS ตกแต่งดีไซน์ใหม่ให้พรีเมียมและสวยงามยิ่งขึ้น
 st.markdown("""
 <style>
+    /* ธีมสีพื้นหลังภาพรวม */
     .stApp {
-        background-color: #FAF5F6 !important;
+        background: linear-gradient(135deg, #FAF5F6 0%, #FFF0F3 100%) !important;
     }
     
     p, span, label, div, h1, h2, h3, h4, .stMarkdown {
@@ -17,66 +18,92 @@ st.markdown("""
         font-family: 'Sukhumvit Set', 'Kanit', sans-serif;
     }
 
+    /* หัวข้อหลัก */
     .main-title {
-        color: #B85B74 !important;
+        color: #A34860 !important;
         text-align: center;
-        font-weight: bold;
-        font-size: 2.2rem;
-        margin-bottom: 5px;
+        font-weight: 800;
+        font-size: 2.5rem;
+        margin-bottom: 0px;
+        letter-spacing: -0.5px;
     }
     
     .sub-title {
-        color: #8E485B !important;
+        color: #7A4250 !important;
         text-align: center;
-        font-size: 0.95rem;
-        margin-bottom: 20px;
+        font-size: 1rem;
+        margin-bottom: 25px;
+        font-weight: 400;
     }
 
+    /* กล่องแสดงผลลัพธ์หลัก */
     .result-card {
         background-color: #FFFFFF !important;
-        border-radius: 20px;
-        padding: 22px;
-        box-shadow: 0 8px 20px rgba(184, 91, 116, 0.08);
-        border: 1px solid #F2D6DC;
-        margin-top: 15px;
-        margin-bottom: 20px;
+        border-radius: 24px;
+        padding: 28px;
+        box-shadow: 0 12px 30px rgba(163, 72, 96, 0.08);
+        border: 1px solid #F5D6DE;
+        margin-top: 20px;
+        margin-bottom: 25px;
+    }
+
+    /* การ์ดแยกหมวดหมู่ย่อยเครื่องสำอาง */
+    .category-box {
+        background-color: #FFF9FA;
+        border-radius: 16px;
+        padding: 16px 18px;
+        margin-bottom: 15px;
+        border: 1px solid #FCE4EC;
     }
 
     .section-head {
-        color: #B85B74 !important;
-        font-size: 1.1rem;
-        font-weight: bold;
-        border-bottom: 2px dashed #E8B4C0;
-        padding-bottom: 6px;
-        margin-top: 18px;
-        margin-bottom: 12px;
+        color: #9C3852 !important;
+        font-size: 1.05rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
     }
 
+    /* วงกลมแสดงสี Swatch */
     .swatch-circle {
         display: inline-block;
-        width: 22px;
-        height: 22px;
+        width: 20px;
+        height: 20px;
         border-radius: 50%;
         margin-right: 10px;
         vertical-align: middle;
         border: 2px solid #FFFFFF;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.15);
     }
 
+    /* ตกแต่งปุ่มกดหลัก */
     .stButton>button {
         width: 100%;
-        background-color: #B85B74 !important;
+        background: linear-gradient(135deg, #B85B74 0%, #9C3852 100%) !important;
         color: white !important;
         font-weight: bold !important;
-        border-radius: 12px !important;
-        padding: 10px 20px !important;
+        border-radius: 14px !important;
+        padding: 12px 20px !important;
         border: none !important;
-        font-size: 1.05rem !important;
+        font-size: 1.1rem !important;
+        box-shadow: 0 6px 15px rgba(184, 91, 116, 0.25);
+        transition: all 0.3s ease;
+    }
+    
+    .stButton>button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(184, 91, 116, 0.35);
+    }
+
+    /* ปรับแต่งกล่องแจ้งเตือน */
+    .stAlert {
+        border-radius: 12px !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# ฐานข้อมูลเครื่องสำอาง
+# ฐานข้อมูลเครื่องสำอาง (ชุดข้อมูลเดิมทั้งหมด)
 FOUNDATION_DB = {
     "Warm": [
         {"name_th": "00W (Warm Porcelain) — ผิวขาวมากพิเศษ โทนอุ่นอมเหลือง", "name_en": "00W (Warm Porcelain) — Very Fair Warm", "hex": "#F9E4D3"},
@@ -132,7 +159,7 @@ EYESHADOW_DB = {
 }
 
 def render_swatch(hex_code, text):
-    return f'<div style="margin-bottom:8px;"><span class="swatch-circle" style="background-color:{hex_code};"></span><span style="font-size:0.95rem;">{text}</span></div>'
+    return f'<div style="margin-bottom:8px; display: flex; align-items: center;"><span class="swatch-circle" style="background-color:{hex_code}; flex-shrink: 0;"></span><span style="font-size:0.92rem; line-height: 1.3;">{text}</span></div>'
 
 def extract_skin_color_accurate(img_array):
     h, w, _ = img_array.shape
@@ -157,10 +184,13 @@ def extract_skin_color_accurate(img_array):
 st.markdown('<div class="main-title">🎀 GlamAI</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-title">ระบบวิเคราะห์อันเดอร์โทนสีผิวและแนะนำเครื่องสำอางอัจฉริยะ</div>', unsafe_allow_html=True)
 
-lang = st.selectbox("🌐 เปลี่ยนภาษา / Select Language", ["TH (ไทย)", "EN (English)"])
+# ปรับส่วนเลือกภาษาให้อยู่ในกรอบดีไซน์สวยงาม
+col_lang1, col_lang2, col_lang3 = st.columns([1, 2, 1])
+with col_lang2:
+    lang = st.selectbox("", ["TH (ไทย)", "EN (English)"], label_visibility="collapsed")
 is_th = "TH" in lang
 
-st.write("---")
+st.write("")
 
 uploaded_file = st.file_uploader(
     "📷 ถ่ายรูป หรือ เลือกรูปภาพใบหน้าของคุณ" if is_th else "📷 Take a photo or select your face image", 
@@ -210,26 +240,37 @@ if uploaded_file is not None:
 
         st.markdown('<div class="result-card">', unsafe_allow_html=True)
         res_head = "💖 ผลการวิเคราะห์อันเดอร์โทนและเครื่องสำอาง 💖" if is_th else "💖 Analysis Result 💖"
-        st.markdown(f'<h3 style="color:#B85B74; text-align:center; margin-top:0;">{res_head}</h3>', unsafe_allow_html=True)
+        st.markdown(f'<h3 style="color:#A34860; text-align:center; margin-top:0; margin-bottom:15px;">{res_head}</h3>', unsafe_allow_html=True)
 
-        st.markdown(f"🌈 <b>ผลการจำแนกอันเดอร์โทน:</b> {undertone_title}", unsafe_allow_html=True)
-        st.markdown(f"✨ <b>คำแนะนำสไตล์เมคอัพ:</b> {style_desc}", unsafe_allow_html=True)
+        st.markdown(f"<div style='background-color:#FFF0F3; padding:12px 16px; border-radius:12px; margin-bottom:15px;'>🌈 <b>ผลการจำแนกอันเดอร์โทน:</b> {undertone_title}<br>✨ <b>คำแนะนำสไตล์เมคอัพ:</b> {style_desc}</div>", unsafe_allow_html=True)
         
-        st.markdown(f'<div class="section-head">รองพื้นที่แนะนำ (Recommended Foundation)</div>' if is_th else '<div class="section-head">Foundation</div>', unsafe_allow_html=True)
+        # จัดหมวดหมู่ Foundation
+        st.markdown('<div class="category-box">', unsafe_allow_html=True)
+        st.markdown(f'<div class="section-head">🧴 รองพื้นที่แนะนำ (Recommended Foundation)</div>' if is_th else '<div class="section-head">Foundation</div>', unsafe_allow_html=True)
         for item in FOUNDATION_DB[key]:
             st.markdown(render_swatch(item["hex"], item["name_th"] if is_th else item["name_en"]), unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
             
-        st.markdown(f'<div class="section-head">บลัชออนที่แนะนำ (Recommended Blush)</div>' if is_th else '<div class="section-head">Blush</div>', unsafe_allow_html=True)
+        # จัดหมวดหมู่ Blush
+        st.markdown('<div class="category-box">', unsafe_allow_html=True)
+        st.markdown(f'<div class="section-head">🌸 บลัชออนที่แนะนำ (Recommended Blush)</div>' if is_th else '<div class="section-head">Blush</div>', unsafe_allow_html=True)
         for item in BLUSH_DB[key]:
             st.markdown(render_swatch(item["hex"], item["name_th"] if is_th else item["name_en"]), unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-        st.markdown(f'<div class="section-head">ลิปสติกที่แนะนำ (Recommended Lipstick)</div>' if is_th else '<div class="section-head">Lipstick</div>', unsafe_allow_html=True)
+        # จัดหมวดหมู่ Lipstick
+        st.markdown('<div class="category-box">', unsafe_allow_html=True)
+        st.markdown(f'<div class="section-head">💄 ลิปสติกที่แนะนำ (Recommended Lipstick)</div>' if is_th else '<div class="section-head">Lipstick</div>', unsafe_allow_html=True)
         for item in LIP_DB[key]:
             st.markdown(render_swatch(item["hex"], item["name_th"] if is_th else item["name_en"]), unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-        st.markdown(f'<div class="section-head">พาเลตต์ตาที่แนะนำ (Recommended Eyeshadow)</div>' if is_th else '<div class="section-head">Eyeshadow</div>', unsafe_allow_html=True)
+        # จัดหมวดหมู่ Eyeshadow
+        st.markdown('<div class="category-box">', unsafe_allow_html=True)
+        st.markdown(f'<div class="section-head">👁️ พาเลตต์ตาที่แนะนำ (Recommended Eyeshadow)</div>' if is_th else '<div class="section-head">Eyeshadow</div>', unsafe_allow_html=True)
         for item in EYESHADOW_DB[key]:
             st.markdown(render_swatch(item["hex"], item["name_th"] if is_th else item["name_en"]), unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
         # สร้างข้อความสำหรับดาวน์โหลดผลลัพธ์
         report_content = f"""=== GlamAI Analysis Report ===
