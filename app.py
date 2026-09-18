@@ -85,12 +85,12 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ฐานข้อมูลเครื่องสำอาง
+# ฐานข้อมูลเครื่องสำอางพร้อมรหัสสี HEX
 FOUNDATION_DB = {
     "Warm": [
         {"name_th": "00W (Warm Porcelain) — ผิวขาวมากพิเศษ โทนอุ่นอมเหลือง", "name_en": "00W (Warm Porcelain) — Very Fair Warm", "hex": "#F9E4D3"},
         {"name_th": "01W (Warm Vanilla) — ผิวขาวสว่าง โทนอุ่นอมเหลือง", "name_en": "01W (Warm Vanilla) — Fair Warm", "hex": "#F4D2BA"},
-        {"name_th": "02W (Warm Ivory) — ผิวขาวเหลืองทั่วไป โทนอุ่นอมเหลือง", "name_en": "02W (Warm Ivory) — Light Medium Warm", "hex": "#E9C7AA"}
+        {"name_th": "02W (Warm Ivory) — ผิวขาวเหลืองถึงผิวสองสี โทนอุ่นอมเหลือง", "name_en": "02W (Warm Ivory) — Medium Warm", "hex": "#E9C7AA"}
     ],
     "Cool": [
         {"name_th": "00N (Natural Porcelain) — ผิวขาวมากพิเศษ โทนอมชมพูธรรมชาติ", "name_en": "00N (Natural Porcelain) — Very Fair Cool", "hex": "#FAF0E6"},
@@ -182,48 +182,46 @@ if uploaded_file is not None:
     btn_label = "✨ เริ่มวิเคราะห์สีผิวและอันเดอร์โทน" if is_th else "✨ Analyze Skin Color & Undertone"
     if st.button(btn_label):
         img_array = np.array(image)
-        h, w, _ = img_array.shape
 
-        # สกัดพิกเซลจากบริเวณแก้มและโหนกแก้ม (จุดที่รับแสงดีที่สุด)
-        crop_h_start, crop_h_end = int(h * 0.38), int(h * 0.58)
-        crop_w_start, crop_w_end = int(w * 0.55), int(w * 0.82)
-        
-        cheek_region = img_array[crop_h_start:crop_h_end, crop_w_start:crop_w_end]
-        
-        # คำนวณค่าความสว่างของแต่ละพิกเซล (Luminance)
-        brightness = 0.299 * cheek_region[:, :, 0] + 0.587 * cheek_region[:, :, 1] + 0.114 * cheek_region[:, :, 2]
-        
-        # ตัดเงาออก โดยคัดเลือกเฉพาะกลุ่มพิกเซลที่สว่างสูงสุด 30% แรก (Brightest 30% Skin Pixels)
-        threshold = np.percentile(brightness, 70)
-        valid_mask = brightness >= threshold
-        valid_pixels = cheek_region[valid_mask]
+        # 1. ระบบคัดกรองพิกเซลที่เป็นผิวหนังมนุษย์จริง (คัดแยกเสื้อสีขาว และผนังออก)
+        r_chan = img_array[:, :, 0]
+        g_chan = img_array[:, :, 1]
+        b_chan = img_array[:, :, 2]
 
-        if len(valid_pixels) > 0:
-            avg_color = np.mean(valid_pixels, axis=0)
-        else:
-            avg_color = np.mean(cheek_region, axis=(0, 1))
+        skin_filter = (r_chan > 40) & (g_chan > 25) & (b_chan > 15) & \
+                      (r_chan > g_chan) & (r_chan > b_chan) & \
+                      (np.abs(r_chan.astype(int) - g_chan.astype(int)) > 12) & \
+                      (r_chan < 240) # ตัดจุดสะท้อนแสงขาวเวอร์ออก
+
+        skin_pixels = img_array[skin_filter]
+
+        if len(skin_pixels) > 0:
+            # คำนวณหาค่าเฉลี่ยสว่างกลาง (Percentile 35th - 80th) ตัดเงาเข้มออก
+            luminance = 0.299 * skin_pixels[:, 0] + 0.587 * skin_pixels[:, 1] + 0.114 * skin_pixels[:, 2]
+            p_low, p_high = np.percentile(luminance, 35), np.percentile(luminance, 80)
+            valid_mask = (luminance >= p_low) & (luminance <= p_high)
+            final_pixels = skin_pixels[valid_mask]
             
-        r, g, b = avg_color[0], avg_color[1], avg_color[2]
-        
-        # ปรับแก้ความสว่างอย่างสมดุล (Dynamic Gamma Correction) สำหรับทุกเฉดผิว
-        max_val = max(r, g, b, 1)
-        target_lightness = min(245.0, max_val * 1.25)
-        scale_factor = target_lightness / max_val
-        
-        disp_r = int(min(255, r * scale_factor))
-        disp_g = int(min(255, g * scale_factor))
-        disp_b = int(min(255, b * scale_factor))
+            if len(final_pixels) > 0:
+                avg_rgb = np.mean(final_pixels, axis=0)
+            else:
+                avg_rgb = np.mean(skin_pixels, axis=0)
+        else:
+            avg_rgb = np.mean(img_array, axis=(0, 1))
+
+        r, g, b = avg_rgb[0], avg_rgb[1], avg_rgb[2]
+        disp_r, disp_g, disp_b = int(r), int(g), int(b)
         display_hex = f"#{disp_r:02X}{disp_g:02X}{disp_b:02X}"
 
-        # คำนวณจำแนกอันเดอร์โทนอย่างแม่นยำ
-        r_ratio = r / max(1.0, g)
-        b_ratio = b / max(1.0, g)
+        # 2. จำแนกอันเดอร์โทนอย่างตรงแม่นยำ
+        r_g_ratio = r / max(1.0, g)
+        g_b_diff = g - b
 
-        if b_ratio > 0.80 or (r - b) < 28:
+        if (b > g * 0.88) or ((r - b) < 22):
             key = "Cool"
             undertone_title = "Cool Tone (โทนเย็น / ผิวโทนชมพู)" if is_th else "Cool Tone"
             style_desc = "เหมาะกับการแต่งหน้าโทนชมพูนม ชมพูกุหลาบ ให้ลุคหน้าผ่อง สว่างใส สไตล์เกาหลี" if is_th else "Best with milky pink & rose tones."
-        elif r_ratio > 1.15 and (g - b) > 15:
+        elif (r_g_ratio > 1.12) and (g_b_diff > 12):
             key = "Warm"
             undertone_title = "Warm Tone (โทนอุ่น / ผิวโทนเหลือง-สองสี)" if is_th else "Warm Tone"
             style_desc = "เหมาะกับการแต่งหน้าโทนส้มพีช คอรัล ให้ลุคผิวบ่มแดดสดใส" if is_th else "Best with warm peach & coral tones."
