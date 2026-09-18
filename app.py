@@ -3,17 +3,22 @@ import streamlit as st
 # ตั้งค่าหน้าเว็บ
 st.set_page_config(page_title="GlamAI : Beauty AI Advisor", page_icon="💄", layout="centered")
 
-# CSS ตกแต่งธีมหวาน แกรม ละมุน (Soft Pastel Glam)
+# CSS ตกแต่งธีมหวาน แกรม ละมุน + บังคับสีข้อความให้ชัดเจน
 st.markdown("""
 <style>
     /* พี้นหลังเว็บโทนชมพูพาสเทลละมุน */
     .stApp {
-        background-color: #FFF5F7;
+        background-color: #FFF5F7 !important;
     }
     
+    /* บังคับสีข้อความทั่วไปและข้อความในตัวเลือก */
+    p, span, label, div, .stMarkdown {
+        color: #333333 !important;
+    }
+
     /* หัวข้อหลัก */
     .main-title {
-        color: #D81B60;
+        color: #D81B60 !important;
         text-align: center;
         font-family: 'Helvetica Neue', sans-serif;
         font-weight: bold;
@@ -21,7 +26,7 @@ st.markdown("""
         margin-bottom: 5px;
     }
     .sub-title {
-        color: #880E4F;
+        color: #880E4F !important;
         text-align: center;
         font-size: 1rem;
         margin-bottom: 25px;
@@ -29,7 +34,7 @@ st.markdown("""
 
     /* การ์ดสรุปผล */
     .glam-card {
-        background-color: #FFFFFF;
+        background-color: #FFFFFF !important;
         border-radius: 18px;
         padding: 20px;
         box-shadow: 0 8px 20px rgba(216, 27, 96, 0.08);
@@ -39,7 +44,7 @@ st.markdown("""
 
     /* หัวข้อภายในผลการวิเคราะห์ */
     .section-header {
-        color: #C2185B;
+        color: #C2185B !important;
         font-size: 1.2rem;
         font-weight: bold;
         margin-top: 15px;
@@ -62,13 +67,19 @@ st.markdown("""
 
     /* กล่องทริคพิเศษ */
     .tip-box {
-        background: linear-gradient(135deg, #FFF0F5 0%, #FFE4E1 100%);
+        background: linear-gradient(135deg, #FFF0F5 0%, #FFE4E1 100%) !important;
         border-left: 5px solid #FF69B4;
         padding: 15px;
         border-radius: 12px;
-        color: #4A4A4A;
+        color: #4A4A4A !important;
         font-size: 0.95rem;
         margin-top: 15px;
+    }
+
+    /* ตกแต่งปุ่มเลือก Radio ให้ตัวหนังสือชัดเจน */
+    div[role="radiogroup"] label p {
+        color: #4A154B !important;
+        font-weight: 500;
     }
 </style>
 """, unsafe_allow_html=True)
