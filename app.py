@@ -5,7 +5,7 @@ from PIL import Image
 # ตั้งค่าหน้าเว็บ
 st.set_page_config(page_title="GlamAI : AI Beauty Advisor Project", page_icon="🎀", layout="centered")
 
-# CSS ตกแต่งธีมโครงงาน
+# CSS ตกแต่งธีมโครงงาน (แบบไม่มี Sidebar)
 st.markdown("""
 <style>
     .stApp {
@@ -29,7 +29,7 @@ st.markdown("""
         color: #8E485B !important;
         text-align: center;
         font-size: 0.95rem;
-        margin-bottom: 15px;
+        margin-bottom: 10px;
     }
 
     .project-badge {
@@ -40,7 +40,9 @@ st.markdown("""
         border-radius: 20px;
         font-size: 0.85rem;
         font-weight: bold;
-        margin-bottom: 20px;
+        margin-bottom: 15px;
+        display: inline-block;
+        width: 100%;
     }
 
     .info-box {
@@ -182,26 +184,6 @@ lang = st.selectbox("🌐 เปลี่ยนภาษา / Select Language", 
 is_th = "TH" in lang
 
 st.write("---")
-
-# เพิ่ม Sidebar สำหรับแสดงข้อมูลโครงงาน (เพิ่มความน่าเชื่อถือเวลาครูตรวจ)
-with st.sidebar:
-    st.markdown("### 👩‍🎓 ข้อมูลโครงงาน")
-    st.info(
-        "**ชื่อโครงงาน:** GlamAI: Personal Color & Makeup Advisor\n\n"
-        "**ระดับชั้น:** มัธยมศึกษาปีที่ 5\n\n"
-        "**เทคโนโลยีที่ใช้:**\n"
-        "- Python & Streamlit (Web App)\n"
-        "- NumPy (Image Processing / Color Extraction)\n"
-        "- PIL / Pillow (Image Handling)\n"
-    )
-    st.markdown("---")
-    st.markdown("### 🔬 หลักการทำงานของระบบ")
-    st.write(
-        "1. **Image Capture:** รับภาพถ่ายใบหน้าผ่านกล้องหรือไฟล์ภาพ\n"
-        "2. **ROI Extraction:** ตัดภาพเฉพาะบริเวณกึ่งกลางใบหน้า (โซนแก้ม/หน้าผาก)\n"
-        "3. **Color Analysis:** คำนวณค่าเฉลี่ย RGB เพื่อจำแนกอันเดอร์โทน (Warm / Cool / Neutral)\n"
-        "4. **Recommendation:** ระบบจับคู่เฉลี่ยสีเครื่องสำอางที่เหมาะสมที่สุด"
-    )
 
 if is_th:
     st.markdown("""
