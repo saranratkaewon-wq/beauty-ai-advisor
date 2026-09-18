@@ -151,7 +151,6 @@ is_th = "TH" in lang
 
 st.write("---")
 
-# คำแนะนำก่อนถ่าย/อัปโหลดรูป
 if is_th:
     st.markdown("""
     <div class="info-box">
@@ -185,29 +184,46 @@ if uploaded_file is not None:
         img_array = np.array(image)
         h, w, _ = img_array.shape
 
-        crop_h_start, crop_h_end = int(h * 0.45), int(h * 0.60)
-        crop_w_start, crop_w_end = int(w * 0.60), int(w * 0.80)
+        # สกัดพิกเซลจากบริเวณแก้มและโหนกแก้ม (จุดที่รับแสงดีที่สุด)
+        crop_h_start, crop_h_end = int(h * 0.38), int(h * 0.58)
+        crop_w_start, crop_w_end = int(w * 0.55), int(w * 0.82)
         
         cheek_region = img_array[crop_h_start:crop_h_end, crop_w_start:crop_w_end]
-        valid_pixels = cheek_region[np.mean(cheek_region, axis=2) > 100]
         
+        # คำนวณค่าความสว่างของแต่ละพิกเซล (Luminance)
+        brightness = 0.299 * cheek_region[:, :, 0] + 0.587 * cheek_region[:, :, 1] + 0.114 * cheek_region[:, :, 2]
+        
+        # ตัดเงาออก โดยคัดเลือกเฉพาะกลุ่มพิกเซลที่สว่างสูงสุด 30% แรก (Brightest 30% Skin Pixels)
+        threshold = np.percentile(brightness, 70)
+        valid_mask = brightness >= threshold
+        valid_pixels = cheek_region[valid_mask]
+
         if len(valid_pixels) > 0:
             avg_color = np.mean(valid_pixels, axis=0)
         else:
             avg_color = np.mean(cheek_region, axis=(0, 1))
             
-        r, g, b = int(avg_color[0]), int(avg_color[1]), int(avg_color[2])
+        r, g, b = avg_color[0], avg_color[1], avg_color[2]
         
-        disp_r = min(255, int(r * 1.18))
-        disp_g = min(255, int(g * 1.14))
-        disp_b = min(255, int(b * 1.15))
+        # ปรับแก้ความสว่างอย่างสมดุล (Dynamic Gamma Correction) สำหรับทุกเฉดผิว
+        max_val = max(r, g, b, 1)
+        target_lightness = min(245.0, max_val * 1.25)
+        scale_factor = target_lightness / max_val
+        
+        disp_r = int(min(255, r * scale_factor))
+        disp_g = int(min(255, g * scale_factor))
+        disp_b = int(min(255, b * scale_factor))
         display_hex = f"#{disp_r:02X}{disp_g:02X}{disp_b:02X}"
 
-        if (r - b) < 35 or (b > g * 0.85):
+        # คำนวณจำแนกอันเดอร์โทนอย่างแม่นยำ
+        r_ratio = r / max(1.0, g)
+        b_ratio = b / max(1.0, g)
+
+        if b_ratio > 0.80 or (r - b) < 28:
             key = "Cool"
             undertone_title = "Cool Tone (โทนเย็น / ผิวโทนชมพู)" if is_th else "Cool Tone"
             style_desc = "เหมาะกับการแต่งหน้าโทนชมพูนม ชมพูกุหลาบ ให้ลุคหน้าผ่อง สว่างใส สไตล์เกาหลี" if is_th else "Best with milky pink & rose tones."
-        elif (r - g) > 25 and (g - b) > 18:
+        elif r_ratio > 1.15 and (g - b) > 15:
             key = "Warm"
             undertone_title = "Warm Tone (โทนอุ่น / ผิวโทนเหลือง-สองสี)" if is_th else "Warm Tone"
             style_desc = "เหมาะกับการแต่งหน้าโทนส้มพีช คอรัล ให้ลุคผิวบ่มแดดสดใส" if is_th else "Best with warm peach & coral tones."
@@ -220,7 +236,7 @@ if uploaded_file is not None:
         res_head = "💖 ผลการวิเคราะห์เมคอัพเฉพาะบุคคล GlamAI 💖" if is_th else "💖 GlamAI Personal Makeup Analysis 💖"
         st.markdown(f'<h3 style="color:#B85B74; text-align:center; margin-top:0;">{res_head}</h3>', unsafe_allow_html=True)
 
-        skin_label = f"<b>สีผิวที่สกัดได้จริง:</b> <code>HEX: {display_hex}</code> | <b>RGB:</b> ({r}, {g}, {b})" if is_th else f"<b>Sampled Skin Color:</b> <code>HEX: {display_hex}</code>"
+        skin_label = f"<b>สีผิวที่สกัดได้จริง:</b> <code>HEX: {display_hex}</code> | <b>RGB:</b> ({disp_r}, {disp_g}, {disp_b})" if is_th else f"<b>Sampled Skin Color:</b> <code>HEX: {display_hex}</code>"
         st.markdown(render_swatch(display_hex, skin_label), unsafe_allow_html=True)
         
         st.markdown(f"🌈 <b>คำนวณอันเดอร์โทน:</b> {undertone_title}", unsafe_allow_html=True)
@@ -242,7 +258,6 @@ if uploaded_file is not None:
         for item in EYESHADOW_DB[key]:
             st.markdown(render_swatch(item["hex"], item["name_th"] if is_th else item["name_en"]), unsafe_allow_html=True)
 
-        # ข้อเสนอแนะการทดสอบสีจริง
         st.write("---")
         if is_th:
             st.caption("⚠️ **ข้อแนะนำเพิ่มเติม:** สีผิวที่สกัดได้อาจได้รับผลกระทบจากแสงของภาพและหน้าจอ แนะนำให้ทดลองปาดเนื้อผลิตภัณฑ์ (Swatch) บริเวณกรอบหน้า/สันกราม ก่อนตัดสินใจเลือกซื้อ")
