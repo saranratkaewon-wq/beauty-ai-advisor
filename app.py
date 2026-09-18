@@ -4,7 +4,7 @@ from PIL import Image, ImageStat
 # ตั้งค่าหน้าเว็บ
 st.set_page_config(page_title="GlamAI : Beauty AI Advisor", page_icon="🎀", layout="centered")
 
-# CSS ตกแต่งธีมน่ารัก ละมุน นวลตา (Soft Dusty Rose - ไม่แสบตา)
+# CSS ตกแต่งธีมน่ารัก ละมุน นวลตา (Soft Dusty Rose - ถนอมสายตา)
 st.markdown("""
 <style>
     .stApp {
@@ -97,26 +97,59 @@ def check_image_brightness(img):
     stat = ImageStat.Stat(gray_img)
     return stat.mean[0]
 
+# ฟังก์ชันวิเคราะห์สีผิวและจำแนกอันเดอร์โทนจากรูปภาพอัตโนมัติ
+def analyze_skin_from_image(img):
+    # ปรับขนาดภาพและสุ่มสกัดพิกเซลบริเวณจุดกึ่งกลาง (เกณฑ์ประมาณพื้นที่ผิวหน้า)
+    img_rgb = img.convert('RGB')
+    width, height = img_rgb.size
+    
+    # ดึงค่าสีสี่เหลี่ยมบริเวณตรงกลางภาพ (Crop center region)
+    left = int(width * 0.35)
+    top = int(height * 0.35)
+    right = int(width * 0.65)
+    bottom = int(height * 0.65)
+    
+    center_crop = img_rgb.crop((left, top, right, bottom))
+    stat = ImageStat.Stat(center_crop)
+    
+    r = int(stat.mean[0])
+    g = int(stat.mean[1])
+    b = int(stat.mean[2])
+    
+    hex_code = f"#{r:02X}{g:02X}{b:02X}"
+    
+    # อัลกอริทึมคำนวณจำแนกอันเดอร์โทนจากค่า RGB
+    # Warm: R > G > B โดยมีสัดส่วนสีเหลือง/แดงเด่นชัด
+    # Cool: ค่า B ค่อนข้างสูง หรือสัดส่วน R-B น้อย
+    if (r - b) > 45 and (g - b) > 20:
+        undertone = "Warm"
+    elif (r - b) < 30 or (b > g):
+        undertone = "Cool"
+    else:
+        undertone = "Neutral"
+        
+    return r, g, b, hex_code, undertone
+
 # ฐานข้อมูลรองพื้น
 FOUNDATION_DB = {
     "Warm": [
-        {"name_th": "00W (Warm Porcelain) — ผิวขาวมากพิเศษ โทนอุ่นอมเหลือง", "name_en": "00W (Warm Porcelain) — Very Fair with Warm Yellow Undertone", "hex": "#F9E4D3"},
-        {"name_th": "01W (Warm Vanilla) — ผิวขาวสว่าง โทนอุ่นอมเหลือง", "name_en": "01W (Warm Vanilla) — Fair with Warm Yellow Undertone", "hex": "#F4D2BA"},
-        {"name_th": "02W (Warm Ivory) — ผิวขาวเหลืองทั่วไป โทนอุ่นอมเหลือง", "name_en": "02W (Warm Ivory) — Light Medium with Warm Undertone", "hex": "#E9C7AA"},
-        {"name_th": "02G (Golden Ivory) — ผิวขาวเหลืองทั่วไป โทนอุ่นประกายทอง", "name_en": "02G (Golden Ivory) — Light Medium with Golden Warm Undertone", "hex": "#E2BC9B"},
-        {"name_th": "22W (Sheer Beige) — ผิวกลางๆ ค่อนไปทางสองสี โทนอุ่นอมเหลือง", "name_en": "22W (Sheer Beige) — Medium-Light with Warm Undertone", "hex": "#DEB492"},
-        {"name_th": "03W (Warm Almond) — ผิวสองสี/ผิวปานกลาง โทนอุ่นอมเหลือง", "name_en": "03W (Warm Almond) — Medium Tan with Warm Yellow Undertone", "hex": "#D6A783"}
+        {"name_th": "00W (Warm Porcelain) — ผิวขาวมากพิเศษ โทนอุ่นอมเหลือง", "name_en": "00W (Warm Porcelain) — Very Fair Warm", "hex": "#F9E4D3"},
+        {"name_th": "01W (Warm Vanilla) — ผิวขาวสว่าง โทนอุ่นอมเหลือง", "name_en": "01W (Warm Vanilla) — Fair Warm", "hex": "#F4D2BA"},
+        {"name_th": "02W (Warm Ivory) — ผิวขาวเหลืองทั่วไป โทนอุ่นอมเหลือง", "name_en": "02W (Warm Ivory) — Light Medium Warm", "hex": "#E9C7AA"},
+        {"name_th": "02G (Golden Ivory) — ผิวขาวเหลืองทั่วไป โทนอุ่นประกายทอง", "name_en": "02G (Golden Ivory) — Light Medium Golden", "hex": "#E2BC9B"},
+        {"name_th": "22W (Sheer Beige) — ผิวกลางๆ ค่อนไปทางสองสี โทนอุ่นอมเหลือง", "name_en": "22W (Sheer Beige) — Medium Warm", "hex": "#DEB492"},
+        {"name_th": "03W (Warm Almond) — ผิวสองสี/ผิวปานกลาง โทนอุ่นอมเหลือง", "name_en": "03W (Warm Almond) — Medium Tan Warm", "hex": "#D6A783"}
     ],
     "Cool": [
-        {"name_th": "00N (Natural Porcelain) — ผิวขาวมากพิเศษ โทนกลางธรรมชาติ", "name_en": "00N (Natural Porcelain) — Very Fair with Neutral Undertone", "hex": "#FAF0E6"},
-        {"name_th": "01 / 01 Vanilla — ผิวขาวสว่าง โทนดั้งเดิม (กึ่งนิวทรัล)", "name_en": "01 / 01 Vanilla — Fair with Semi-Neutral Undertone", "hex": "#F6E3D4"},
-        {"name_th": "01N (Natural Vanilla) — ผิวขาวสว่าง โทนกลางธรรมชาติ", "name_en": "01N (Natural Vanilla) — Fair with Natural Neutral Undertone", "hex": "#F2D8C6"},
-        {"name_th": "02N (Natural Ivory) — ผิวขาวเหลืองทั่วไป โทนกลางธรรมชาติ", "name_en": "02N (Natural Ivory) — Light Medium with Neutral Undertone", "hex": "#EACCB8"}
+        {"name_th": "00N (Natural Porcelain) — ผิวขาวมากพิเศษ โทนกลางธรรมชาติ", "name_en": "00N (Natural Porcelain) — Very Fair Neutral/Cool", "hex": "#FAF0E6"},
+        {"name_th": "01 / 01 Vanilla — ผิวขาวสว่าง โทนดั้งเดิม (กึ่งนิวทรัล)", "name_en": "01 / 01 Vanilla — Fair Cool", "hex": "#F6E3D4"},
+        {"name_th": "01N (Natural Vanilla) — ผิวขาวสว่าง โทนกลางธรรมชาติ", "name_en": "01N (Natural Vanilla) — Fair Natural Neutral", "hex": "#F2D8C6"},
+        {"name_th": "02N (Natural Ivory) — ผิวขาวเหลืองทั่วไป โทนกลางธรรมชาติ", "name_en": "02N (Natural Ivory) — Light Medium Neutral", "hex": "#EACCB8"}
     ],
     "Neutral": [
-        {"name_th": "02 / 02 Ivory — ผิวขาวเหลืองทั่วไป โทนดั้งเดิม", "name_en": "02 / 02 Ivory — Light Medium Classic Tone", "hex": "#E8CAAF"},
-        {"name_th": "22N (Shell Beige) — ผิวกลางๆ ค่อนไปทางสองสี โทนกลางธรรมชาติ", "name_en": "22N (Shell Beige) — Medium-Light Natural Tone", "hex": "#DDB18F"},
-        {"name_th": "03N (Natural Petal) — ผิวสองสี/ผิวปานกลาง โทนกลางธรรมชาติ", "name_en": "03N (Natural Petal) — Medium Natural Tone", "hex": "#D4A37F"}
+        {"name_th": "02 / 02 Ivory — ผิวขาวเหลืองทั่วไป โทนดั้งเดิม", "name_en": "02 / 02 Ivory — Light Medium Classic", "hex": "#E8CAAF"},
+        {"name_th": "22N (Shell Beige) — ผิวกลางๆ ค่อนไปทางสองสี โทนกลางธรรมชาติ", "name_en": "22N (Shell Beige) — Medium Natural", "hex": "#DDB18F"},
+        {"name_th": "03N (Natural Petal) — ผิวสองสี/ผิวปานกลาง โทนกลางธรรมชาติ", "name_en": "03N (Natural Petal) — Medium Tan Neutral", "hex": "#D4A37F"}
     ]
 }
 
@@ -181,7 +214,7 @@ def render_swatch(hex_code, text):
 
 # ส่วนหัวแอปพลิเคชัน
 st.markdown('<div class="main-title">🎀 GlamAI</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">✨ AI Makeup & Personal Color Advisor Application ✨</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">✨ AI Automatic Makeup & Personal Color Advisor ✨</div>', unsafe_allow_html=True)
 
 # เลือกภาษา
 lang = st.selectbox("🌐 เปลี่ยนภาษา / Select Language", ["TH (ไทย)", "EN (English)"])
@@ -190,7 +223,7 @@ is_th = "TH" in lang
 st.write("---")
 
 # ส่วนคำแนะนำการถ่ายรูปและอัปโหลด
-st.subheader("📷 1. " + ("ถ่ายภาพ หรือ อัปโหลดรูปภาพใบหน้า" if is_th else "Take or Upload Face Photo"))
+st.subheader("📷 " + ("อัปโหลดรูปภาพใบหน้าเพื่อให้อัลกอริทึมวิเคราะห์อัตโนมัติ" if is_th else "Upload Face Photo for Automatic AI Analysis"))
 
 with st.expander("💡 " + ("คำแนะนำการถ่ายรูปภาพเพื่อให้ AI ประมวลผลแม่นยำที่สุด" if is_th else "Photo Guidelines for Best AI Results")):
     if is_th:
@@ -223,56 +256,41 @@ if uploaded_file is not None:
     elif brightness > 220:
         st.warning("⚠️ " + ("รูปภาพสว่าง/แสงจ้าเกินไป! อาจทำให้สีผิวคลาดเคลื่อน แนะนำถ่ายใหม่ในสภาวะแสงปกติ" if is_th else "Photo is overexposed/too bright! This may affect color accuracy. Recommend retaking in normal lighting."))
     else:
-        st.success("✅ " + ("คุณภาพแสงของรูปภาพอยู่ในเกณฑ์ดี พร้อมทำการวิเคราะห์" if is_th else "Image light condition is optimal for AI analysis."))
-
-# ส่วนเลือกอันเดอร์โทน
-st.subheader("🎨 2. " + ("เลือกอันเดอร์โทนผิวของคุณ" if is_th else "Select Your Skin Undertone"))
-tone_options = [
-    "Warm Tone (โทนอุ่น / ผิวขาวเหลือง - ผิวสองสี)" if is_th else "Warm Tone (Warm / Yellow undertone)",
-    "Cool Tone (โทนเย็น / ผิวขาวอมชมพู)" if is_th else "Cool Tone (Cool / Pink undertone)",
-    "Neutral Tone (โทนธรรมชาติ)" if is_th else "Neutral Tone (Neutral undertone)"
-]
-tone_selection = st.radio("เลือกอันเดอร์โทนเพื่อประมวลผล:" if is_th else "Select undertone for analysis:", tone_options)
+        st.success("✅ " + ("คุณภาพแสงของรูปภาพอยู่ในเกณฑ์ดี พร้อมสำหรับการวิเคราะห์อัตโนมัติ" if is_th else "Image light condition is optimal for AI analysis."))
 
 st.write("")
 
 # ปุ่มวิเคราะห์
-btn_text = "✨ วิเคราะห์สีผิวและแนะนำโทนเมคอัพ" if is_th else "✨ Analyze Skin & Recommend Makeup"
+btn_text = "✨ ประมวลผลภาพถ่ายและวิเคราะห์เมคอัพอัตโนมัติ" if is_th else "✨ Analyze Image & Recommend Makeup"
 if st.button(btn_text, type="primary"):
     if uploaded_file is None:
         st.warning("⚠️ " + ("กรุณาอัปโหลดรูปภาพใบหน้าก่อนทำการวิเคราะห์" if is_th else "Please upload a face image first."))
     else:
         st.balloons()
         
-        # คัดแยกโทนและกำหนดค่า RGB ไม่ให้เกิด NameError
-        if "Warm" in tone_selection:
-            key = "Warm"
-            undertone_title = "Warm Autumn / Warm Spring Tone (โทนอุ่น)" if is_th else "Warm Autumn / Spring Tone"
+        # วิเคราะห์สีจากรูปภาพอัตโนมัติ
+        r, g, b, hex_code, key = analyze_skin_from_image(image)
+        
+        if key == "Warm":
+            undertone_title = "Warm Tone (โทนอุ่น / ผิวโทนเหลือง-สองสี)" if is_th else "Warm Tone (Warm / Yellow undertone)"
             style_desc = "เหมาะกับการแต่งหน้าโทนส้มพีช คอรัล อบอุ่น ให้ลุคผิวสุขภาพดี บ่มแดด มีออร่าสดใส" if is_th else "Best suited for warm peach, coral, and warm brick tones for a radiant, healthy glow."
-            r, g, b = 228, 182, 148
-        elif "Cool" in tone_selection:
-            key = "Cool"
-            undertone_title = "Cool Summer / Cool Winter Tone (โทนเย็น)" if is_th else "Cool Summer / Winter Tone"
+        elif key == "Cool":
+            undertone_title = "Cool Tone (โทนเย็น / ผิวโทนชมพู)" if is_th else "Cool Tone (Cool / Pink undertone)"
             style_desc = "เหมาะกับการแต่งหน้าโทนชมพูนม ชมพูกุหลาบ เบอร์รี่ ให้ลุคหน้าผ่อง สว่างใส ละมุนแบบสไตล์เกาหลี" if is_th else "Best suited for milky pink, rose, and berry shades for a soft, brightened Korean look."
-            r, g, b = 235, 190, 195
         else:
-            key = "Neutral"
-            undertone_title = "Neutral Chic Tone (โทนธรรมชาติ)" if is_th else "Neutral Chic Tone"
+            undertone_title = "Neutral Tone (โทนธรรมชาติ)" if is_th else "Neutral Tone (Neutral undertone)"
             style_desc = "เหมาะกับการแต่งหน้าโทนชานม นู้ดเบจ นู้ดชมพูตุ่น ให้ลุคสวยแพง สุภาพ เรียบหรูคลาสสิก" if is_th else "Best suited for milk tea, beige, and rosy nude shades for an effortless, classy look."
-            r, g, b = 218, 172, 152
 
-        hex_code = f"#{r:02X}{g:02X}{b:02X}"
-
-        # สรุปผล
+        # สรุปผลการวิเคราะห์
         st.markdown('<div class="result-card">', unsafe_allow_html=True)
         res_head = "💖 ผลการวิเคราะห์เมคอัพเฉพาะบุคคล GlamAI 💖" if is_th else "💖 GlamAI Personal Makeup Analysis 💖"
         st.markdown(f'<h3 style="color:#B85B74; text-align:center; margin-top:0;">{res_head}</h3>', unsafe_allow_html=True)
         
-        # แสดงสีผิวและโทนที่สกัดได้
-        skin_label = f"<b>สีผิวที่ประมวลผล:</b> <code>HEX: {hex_code}</code> | <b>RGB:</b> ({r}, {g}, {b})" if is_th else f"<b>Skin Tone Processed:</b> <code>HEX: {hex_code}</code> | <b>RGB:</b> ({r}, {g}, {b})"
+        # แสดงสีผิวและโทนที่สกัดได้จริงจากรูปภาพ
+        skin_label = f"<b>สีผิวที่สกัดจากภาพถ่ายจริง:</b> <code>HEX: {hex_code}</code> | <b>RGB:</b> ({r}, {g}, {b})" if is_th else f"<b>Skin Tone Extracted:</b> <code>HEX: {hex_code}</code> | <b>RGB:</b> ({r}, {g}, {b})"
         st.markdown(render_swatch(hex_code, skin_label), unsafe_allow_html=True)
         
-        under_label = f"🌈 <b>โทนสีผิวประจำตัว:</b> {undertone_title}" if is_th else f"🌈 <b>Personal Color Tone:</b> {undertone_title}"
+        under_label = f"🌈 <b>ผลการคำนวณอันเดอร์โทน:</b> {undertone_title}" if is_th else f"🌈 <b>Calculated Undertone:</b> {undertone_title}"
         st.markdown(under_label, unsafe_allow_html=True)
         
         style_label = f"✨ <b>สไตล์การแต่งหน้าที่แนะนำ:</b> {style_desc}" if is_th else f"✨ <b>Recommended Makeup Style:</b> {style_desc}"
