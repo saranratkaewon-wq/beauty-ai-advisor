@@ -1,6 +1,7 @@
 import streamlit as st
-from PIL import Image, ImageStat
-from streamlit_image_coordinates import streamlit_image_coordinates
+import cv2
+import numpy as np
+from PIL import Image
 
 # ตั้งค่าหน้าเว็บ
 st.set_page_config(page_title="GlamAI : Beauty AI Advisor", page_icon="🎀", layout="centered")
@@ -61,18 +62,6 @@ st.markdown("""
         vertical-align: middle;
         border: 2px solid #FFFFFF;
         box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-    }
-
-    .stButton>button {
-        background: linear-gradient(135deg, #D8708A, #B85B74) !important;
-        color: #FFFFFF !important;
-        font-weight: bold !important;
-        font-size: 1.05rem !important;
-        border-radius: 25px !important;
-        border: none !important;
-        padding: 10px 24px !important;
-        box-shadow: 0 4px 12px rgba(184, 91, 116, 0.3) !important;
-        width: 100%;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -135,81 +124,78 @@ EYESHADOW_DB = {
 def render_swatch(hex_code, text):
     return f'<div style="margin-bottom:8px;"><span class="swatch-circle" style="background-color:{hex_code};"></span><span style="font-size:0.95rem;">{text}</span></div>'
 
-# ส่วนหน้าตาแอป
+# แสดงส่วนบนของเว็บ
 st.markdown('<div class="main-title">🎀 GlamAI</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">✨ Precise Skin Color Sampling & Personal Color Advisor ✨</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">✨ Automatic Personal Color & Makeup Advisor ✨</div>', unsafe_allow_html=True)
 
 lang = st.selectbox("🌐 เปลี่ยนภาษา / Select Language", ["TH (ไทย)", "EN (English)"])
 is_th = "TH" in lang
 
 st.write("---")
-st.subheader("📷 " + ("อัปโหลดรูปภาพ แล้วแตะบนผิวหน้าเพื่อสกัดสี" if is_th else "Upload photo and tap on your face cheek"))
 
 uploaded_file = st.file_uploader(
-    "เลือกไฟล์รูปภาพใบหน้าของคุณ (JPG, PNG)" if is_th else "Upload your face photo", 
+    "อัปโหลดรูปภาพใบหน้าของคุณ (JPG, PNG)" if is_th else "Upload your face photo (JPG, PNG)", 
     type=["jpg", "jpeg", "png"]
 )
 
 if uploaded_file is not None:
+    # อ่านไฟล์รูป
     image = Image.open(uploaded_file).convert('RGB')
+    st.image(image, caption="รูปภาพที่อัปโหลด" if is_th else "Uploaded Image", use_column_width=True)
     
-    st.info("👇 " + ("คำแนะนำ: กรุณาแตะ/คลิกที่ บริเวณแก้มหรือผิวหน้า บนรูปภาพด้านล่างเพื่อเลือกจุดสกัดสี" if is_th else "Instructions: Click/Tap on your cheek area on the image below."))
+    img_array = np.array(image)
+    h, w, _ = img_array.shape
+
+    # สกัดสีบริเวณตรงกลางภาพ (พื้นที่แก้ม/ใบหน้า) อัตโนมัติ
+    crop_h_start, crop_h_end = int(h * 0.4), int(h * 0.6)
+    crop_w_start, crop_w_end = int(w * 0.4), int(w * 0.6)
     
-    # แสดงรูปและรับพิกัดจุดที่แตะ
-    coords = streamlit_image_coordinates(image, key="pil")
+    center_region = img_array[crop_h_start:crop_h_end, crop_w_start:crop_w_end]
+    avg_color_per_row = np.average(center_region, axis=0)
+    avg_color = np.average(avg_color_per_row, axis=0)
+    
+    r, g, b = int(avg_color[0]), int(avg_color[1]), int(avg_color[2])
+    hex_code = f"#{r:02X}{g:02X}{b:02X}"
 
-    if coords is not None:
-        x = coords["x"]
-        y = coords["y"]
+    # วิเคราะห์อันเดอร์โทนอัตโนมัติ
+    if (r - b) < 32 or (b > g * 0.82):
+        key = "Cool"
+        undertone_title = "Cool Tone (โทนเย็น / ผิวโทนชมพู)" if is_th else "Cool Tone"
+        style_desc = "เหมาะกับการแต่งหน้าโทนชมพูนม ชมพูกุหลาบ ให้ลุคหน้าผ่อง สว่างใส สไตล์เกาหลี" if is_th else "Best with milky pink & rose tones."
+    elif (r - b) > 48 and (g - b) > 22:
+        key = "Warm"
+        undertone_title = "Warm Tone (โทนอุ่น / ผิวโทนเหลือง-สองสี)" if is_th else "Warm Tone"
+        style_desc = "เหมาะกับการแต่งหน้าโทนส้มพีช คอรัล ให้ลุคผิวบ่มแดดสดใส" if is_th else "Best with warm peach & coral tones."
+    else:
+        key = "Neutral"
+        undertone_title = "Neutral Tone (โทนธรรมชาติ)" if is_th else "Neutral Tone"
+        style_desc = "เหมาะกับการแต่งหน้าโทนชานม นู้ดเบจ สุภาพ เรียบหรู" if is_th else "Best with milk tea & rosy nude tones."
+
+    # แสดงผลลัพธ์
+    st.markdown('<div class="result-card">', unsafe_allow_html=True)
+    res_head = "💖 ผลการวิเคราะห์เมคอัพเฉพาะบุคคล GlamAI 💖" if is_th else "💖 GlamAI Personal Makeup Analysis 💖"
+    st.markdown(f'<h3 style="color:#B85B74; text-align:center; margin-top:0;">{res_head}</h3>', unsafe_allow_html=True)
+
+    skin_label = f"<b>สีผิวที่สกัดได้อัตโนมัติ:</b> <code>HEX: {hex_code}</code> | <b>RGB:</b> ({r}, {g}, {b})" if is_th else f"<b>Auto-Sampled Skin Color:</b> <code>HEX: {hex_code}</code>"
+    st.markdown(render_swatch(hex_code, skin_label), unsafe_allow_html=True)
+    
+    st.markdown(f"🌈 <b>คำนวณอันเดอร์โทน:</b> {undertone_title}", unsafe_allow_html=True)
+    st.markdown(f"✨ <b>สไตล์ที่แนะนำ:</b> {style_desc}", unsafe_allow_html=True)
+    
+    st.markdown(f'<div class="section-head">🧴 {"รองพื้นที่เหมาะกับเฉดผิว" if is_th else "Foundation"}</div>', unsafe_allow_html=True)
+    for item in FOUNDATION_DB[key]:
+        st.markdown(render_swatch(item["hex"], item["name_th"] if is_th else item["name_en"]), unsafe_allow_html=True)
         
-        # สกัดสีรอบๆ จุดที่คลิก (รัศมี 5x5 พิกเซลเพื่อหาค่าเฉลี่ยเนียนๆ)
-        crop_box = (max(0, x - 2), max(0, y - 2), min(image.width, x + 3), min(image.height, y + 3))
-        cropped_img = image.crop(crop_box)
-        stat = ImageStat.Stat(cropped_img)
-        
-        r = int(stat.mean[0])
-        g = int(stat.mean[1])
-        b = int(stat.mean[2])
-        hex_code = f"#{r:02X}{g:02X}{b:02X}"
+    st.markdown(f'<div class="section-head">🌸 {"บลัชออน" if is_th else "Blush"}</div>', unsafe_allow_html=True)
+    for item in BLUSH_DB[key]:
+        st.markdown(render_swatch(item["hex"], item["name_th"] if is_th else item["name_en"]), unsafe_allow_html=True)
 
-        # จำแนกอันเดอร์โทน
-        if (r - b) < 32 or (b > g * 0.82):
-            key = "Cool"
-            undertone_title = "Cool Tone (โทนเย็น / ผิวโทนชมพู)" if is_th else "Cool Tone"
-            style_desc = "เหมาะกับการแต่งหน้าโทนชมพูนม ชมพูกุหลาบ ให้ลุคหน้าผ่อง สว่างใส สไตล์เกาหลี" if is_th else "Best with milky pink & rose tones."
-        elif (r - b) > 48 and (g - b) > 22:
-            key = "Warm"
-            undertone_title = "Warm Tone (โทนอุ่น / ผิวโทนเหลือง-สองสี)" if is_th else "Warm Tone"
-            style_desc = "เหมาะกับการแต่งหน้าโทนส้มพีช คอรัล ให้ลุคผิวบ่มแดดสดใส" if is_th else "Best with warm peach & coral tones."
-        else:
-            key = "Neutral"
-            undertone_title = "Neutral Tone (โทนธรรมชาติ)" if is_th else "Neutral Tone"
-            style_desc = "เหมาะกับการแต่งหน้าโทนชานม นู้ดเบจ สุภาพ เรียบหรู" if is_th else "Best with milk tea & rosy nude tones."
+    st.markdown(f'<div class="section-head">💋 {"ลิปสติก" if is_th else "Lipstick"}</div>', unsafe_allow_html=True)
+    for item in LIP_DB[key]:
+        st.markdown(render_swatch(item["hex"], item["name_th"] if is_th else item["name_en"]), unsafe_allow_html=True)
 
-        st.markdown('<div class="result-card">', unsafe_allow_html=True)
-        res_head = "💖 ผลการวิเคราะห์เมคอัพเฉพาะบุคคล GlamAI 💖" if is_th else "💖 GlamAI Personal Makeup Analysis 💖"
-        st.markdown(f'<h3 style="color:#B85B74; text-align:center; margin-top:0;">{res_head}</h3>', unsafe_allow_html=True)
+    st.markdown(f'<div class="section-head">👁️ {"พาเลตต์ตา" if is_th else "Eyeshadow"}</div>', unsafe_allow_html=True)
+    for item in EYESHADOW_DB[key]:
+        st.markdown(render_swatch(item["hex"], item["name_th"] if is_th else item["name_en"]), unsafe_allow_html=True)
 
-        skin_label = f"<b>สีผิวที่แตะสกัดจริง (ตำแหน่ง X:{x}, Y:{y}):</b> <code>HEX: {hex_code}</code> | <b>RGB:</b> ({r}, {g}, {b})" if is_th else f"<b>Sampled Skin Color:</b> <code>HEX: {hex_code}</code>"
-        st.markdown(render_swatch(hex_code, skin_label), unsafe_allow_html=True)
-        
-        st.markdown(f"🌈 <b>คำนวณอันเดอร์โทน:</b> {undertone_title}", unsafe_allow_html=True)
-        st.markdown(f"✨ <b>สไตล์ที่แนะนำ:</b> {style_desc}", unsafe_allow_html=True)
-        
-        st.markdown(f'<div class="section-head">🧴 {"รองพื้นที่เหมาะกับเฉดผิว" if is_th else "Foundation"}</div>', unsafe_allow_html=True)
-        for item in FOUNDATION_DB[key]:
-            st.markdown(render_swatch(item["hex"], item["name_th"] if is_th else item["name_en"]), unsafe_allow_html=True)
-            
-        st.markdown(f'<div class="section-head">🌸 {"บลัชออน" if is_th else "Blush"}</div>', unsafe_allow_html=True)
-        for item in BLUSH_DB[key]:
-            st.markdown(render_swatch(item["hex"], item["name_th"] if is_th else item["name_en"]), unsafe_allow_html=True)
-
-        st.markdown(f'<div class="section-head">💋 {"ลิปสติก" if is_th else "Lipstick"}</div>', unsafe_allow_html=True)
-        for item in LIP_DB[key]:
-            st.markdown(render_swatch(item["hex"], item["name_th"] if is_th else item["name_en"]), unsafe_allow_html=True)
-
-        st.markdown(f'<div class="section-head">👁️ {"พาเลตต์ตา" if is_th else "Eyeshadow"}</div>', unsafe_allow_html=True)
-        for item in EYESHADOW_DB[key]:
-            st.markdown(render_swatch(item["hex"], item["name_th"] if is_th else item["name_en"]), unsafe_allow_html=True)
-
-        st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
