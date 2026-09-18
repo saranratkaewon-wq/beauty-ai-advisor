@@ -32,6 +32,15 @@ st.markdown("""
         margin-bottom: 20px;
     }
 
+    .info-box {
+        background-color: #FFF0F3 !important;
+        border-left: 4px solid #B85B74;
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        font-size: 0.9rem;
+    }
+
     .result-card {
         background-color: #FFFFFF !important;
         border-radius: 20px;
@@ -63,7 +72,6 @@ st.markdown("""
         box-shadow: 0 2px 4px rgba(0,0,0,0.15);
     }
 
-    /* ตกแต่งปุ่มวิเคราะห์ */
     .stButton>button {
         width: 100%;
         background-color: #B85B74 !important;
@@ -143,6 +151,26 @@ is_th = "TH" in lang
 
 st.write("---")
 
+# คำแนะนำก่อนถ่าย/อัปโหลดรูป
+if is_th:
+    st.markdown("""
+    <div class="info-box">
+        <b>💡 คำแนะนำสำหรับการถ่ายรูป/อัปโหลดเพื่อให้แม่นยำที่สุด:</b><br>
+        1. ☀️ ถ่ายในสถานที่ที่มี<b>แสงธรรมชาติ</b>สว่างทั่วถึง (หลีกเลี่ยงแสงย้อนและไฟสีเหลือง)<br>
+        2. 👩‍🦰 ถ่ายหน้าตรง เปิดหน้าผากและแก้ม ไม่ให้มีเส้นผมบดบัง<br>
+        3. 🧴 ถ่ายภาพหน้าสด (ไม่แต่งหน้า) เพื่อผลวิเคราะห์สีผิวจริง
+    </div>
+    """, unsafe_allow_html=True)
+else:
+    st.markdown("""
+    <div class="info-box">
+        <b>💡 Tips for Best Analysis Results:</b><br>
+        1. ☀️ Take photo in <b>natural light</b> (Avoid backlighting & warm yellow light)<br>
+        2. 👩‍🦰 Face straight forward and keep hair away from cheeks<br>
+        3. 🧴 Bare skin without makeup for true undertone detection
+    </div>
+    """, unsafe_allow_html=True)
+
 uploaded_file = st.file_uploader(
     "อัปโหลดรูปภาพใบหน้าของคุณ (JPG, PNG)" if is_th else "Upload your face photo (JPG, PNG)", 
     type=["jpg", "jpeg", "png"]
@@ -152,7 +180,6 @@ if uploaded_file is not None:
     image = Image.open(uploaded_file).convert('RGB')
     st.image(image, caption="รูปภาพที่อัปโหลด" if is_th else "Uploaded Image", use_container_width=True)
     
-    # ปุ่มเริ่มการวิเคราะห์
     btn_label = "✨ เริ่มวิเคราะห์สีผิวและอันเดอร์โทน" if is_th else "✨ Analyze Skin Color & Undertone"
     if st.button(btn_label):
         img_array = np.array(image)
@@ -171,13 +198,11 @@ if uploaded_file is not None:
             
         r, g, b = int(avg_color[0]), int(avg_color[1]), int(avg_color[2])
         
-        # ปรับแก้สีสำหรับตัวอย่างวงกลม (Swatch Color) ให้ตรงกับภาพจริง ผิวขาวอมชมพูไบรท์ขึ้น
         disp_r = min(255, int(r * 1.18))
         disp_g = min(255, int(g * 1.14))
         disp_b = min(255, int(b * 1.15))
         display_hex = f"#{disp_r:02X}{disp_g:02X}{disp_b:02X}"
 
-        # การจำแนกอันเดอร์โทนสำหรับผิวขาวสว่างอมชมพู
         if (r - b) < 35 or (b > g * 0.85):
             key = "Cool"
             undertone_title = "Cool Tone (โทนเย็น / ผิวโทนชมพู)" if is_th else "Cool Tone"
@@ -195,7 +220,6 @@ if uploaded_file is not None:
         res_head = "💖 ผลการวิเคราะห์เมคอัพเฉพาะบุคคล GlamAI 💖" if is_th else "💖 GlamAI Personal Makeup Analysis 💖"
         st.markdown(f'<h3 style="color:#B85B74; text-align:center; margin-top:0;">{res_head}</h3>', unsafe_allow_html=True)
 
-        # ใช้วงกลมสีแสดงผลลัพธ์ (display_hex) ให้สว่างอมชมพูตรงตามจริง
         skin_label = f"<b>สีผิวที่สกัดได้จริง:</b> <code>HEX: {display_hex}</code> | <b>RGB:</b> ({r}, {g}, {b})" if is_th else f"<b>Sampled Skin Color:</b> <code>HEX: {display_hex}</code>"
         st.markdown(render_swatch(display_hex, skin_label), unsafe_allow_html=True)
         
@@ -217,5 +241,12 @@ if uploaded_file is not None:
         st.markdown(f'<div class="section-head">👁️ {"พาเลตต์ตา" if is_th else "Eyeshadow"}</div>', unsafe_allow_html=True)
         for item in EYESHADOW_DB[key]:
             st.markdown(render_swatch(item["hex"], item["name_th"] if is_th else item["name_en"]), unsafe_allow_html=True)
+
+        # ข้อเสนอแนะการทดสอบสีจริง
+        st.write("---")
+        if is_th:
+            st.caption("⚠️ **ข้อแนะนำเพิ่มเติม:** สีผิวที่สกัดได้อาจได้รับผลกระทบจากแสงของภาพและหน้าจอ แนะนำให้ทดลองปาดเนื้อผลิตภัณฑ์ (Swatch) บริเวณกรอบหน้า/สันกราม ก่อนตัดสินใจเลือกซื้อ")
+        else:
+            st.caption("⚠️ **Note:** Results may vary based on lighting and display settings. We recommend swatching shades along your jawline before purchasing.")
 
         st.markdown('</div>', unsafe_allow_html=True)
