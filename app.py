@@ -153,16 +153,19 @@ EYESHADOW_DB = {
 def render_swatch(hex_code, text):
     return f'<div style="margin-bottom:8px;"><span class="swatch-circle" style="background-color:{hex_code};"></span><span style="font-size:0.95rem;">{text}</span></div>'
 
-# ฟังก์ชันสกัดสีผิวและแปลงเป็น HEX/RGB
-def extract_skin_color_v1(img_array):
+# ฟังก์ชันสกัดสีผิวและวิเคราะห์อย่างแม่นยำ
+def extract_skin_color_accurate(img_array):
     h, w, _ = img_array.shape
-    crop_h_start, crop_h_end = int(h * 0.40), int(h * 0.60)
-    crop_w_start, crop_w_end = int(w * 0.30), int(w * 0.70)
+    # ดึงค่าสีจากบริเวณใบหน้าส่วนแก้มและโหนกแก้ม
+    crop_h_start, crop_h_end = int(h * 0.35), int(h * 0.65)
+    crop_w_start, crop_w_end = int(w * 0.25), int(w * 0.75)
     center_area = img_array[crop_h_start:crop_h_end, crop_w_start:crop_w_end]
     
     pixels = center_area.reshape(-1, 3)
+    
+    # กรองเงามืดและแสงสะท้อนจ้าออก
     brightness = 0.299 * pixels[:, 0] + 0.587 * pixels[:, 1] + 0.114 * pixels[:, 2]
-    valid_mask = (brightness > 60) & (brightness < 230)
+    valid_mask = (brightness > 70) & (brightness < 220)
     filtered_pixels = pixels[valid_mask]
     
     if len(filtered_pixels) > 0:
@@ -185,8 +188,8 @@ st.write("---")
 if is_th:
     st.markdown("""
     <div class="info-box">
-        <b>💡 คำแนะนำสำหรับการถ่ายรูป/อัปโหลดเพื่อให้แม่นยำที่สุด:</b><br>
-        1. ☀️ ถ่ายในสถานที่ที่มี<b>แสงธรรมชาติ</b>สว่างทั่วถึง (หลีกเลี่ยงแสงย้อนและไฟสีเหลือง)<br>
+        <b>💡 คำแนะนำสำหรับการถ่ายรูปเพื่อให้แม่นยำที่สุด:</b><br>
+        1. ☀️ ถ่ายในสถานที่ที่มี<b>แสงธรรมชาติ</b>สว่างทั่วถึง<br>
         2. 👩‍🦰 ถ่ายหน้าตรง เปิดหน้าผากและแก้ม ไม่ให้มีเส้นผมบดบัง<br>
         3. 🧴 ถ่ายภาพหน้าสด (ไม่แต่งหน้า) เพื่อผลวิเคราะห์สีผิวจริง
     </div>
@@ -195,33 +198,33 @@ else:
     st.markdown("""
     <div class="info-box">
         <b>💡 Tips for Best Analysis Results:</b><br>
-        1. ☀️ Take photo in <b>natural light</b> (Avoid backlighting & warm yellow light)<br>
+        1. ☀️ Take photo in <b>natural light</b><br>
         2. 👩‍🦰 Face straight forward and keep hair away from cheeks<br>
         3. 🧴 Bare skin without makeup for true undertone detection
     </div>
     """, unsafe_allow_html=True)
 
-uploaded_file = st.file_uploader(
-    "อัปโหลดรูปภาพใบหน้าของคุณ (JPG, PNG)" if is_th else "Upload your face photo (JPG, PNG)", 
-    type=["jpg", "jpeg", "png"]
-)
+# กล้องถ่ายรูปเปิดใช้งานทันที ไม่ต้องกดปุ่มหรืออัปโหลด
+camera_photo = st.camera_input("📷 ถ่ายรูปใบหน้าของคุณ" if is_th else "📷 Take a photo of your face")
 
-if uploaded_file is not None:
-    image = Image.open(uploaded_file).convert('RGB')
-    st.image(image, caption="รูปภาพที่อัปโหลด" if is_th else "Uploaded Image", use_container_width=True)
+if camera_photo is not None:
+    image = Image.open(camera_photo).convert('RGB')
     
     btn_label = "✨ เริ่มวิเคราะห์สีผิวและอันเดอร์โทน" if is_th else "✨ Analyze Skin Color & Undertone"
     if st.button(btn_label):
         img_array = np.array(image)
-        r, g, b, hex_code = extract_skin_color_v1(img_array)
+        r, g, b, hex_code = extract_skin_color_accurate(img_array)
 
-        # การคำนวณอันเดอร์โทน
+        # การคำนวณอันเดอร์โทนแบบแม่นยำ
+        # ตรวจจับระดับความสว่างผิว
+        skin_brightness = (r + g + b) / 3
+
         if (r > g) and (g > b):
-            if (r - b) > 40 and (g - b) > 20:
+            if (r - b) > 35 and (g - b) > 15:
                 key = "Warm"
                 undertone_title = "Warm Tone (โทนอุ่น / ผิวโทนเหลือง-สองสี)" if is_th else "Warm Tone"
                 style_desc = "เหมาะกับการแต่งหน้าโทนส้มพีช คอรัล ให้ลุคผิวบ่มแดดสดใส" if is_th else "Best with warm peach & coral tones."
-            elif (r - g) < 25:
+            elif (r - g) < 20:
                 key = "Neutral"
                 undertone_title = "Neutral Tone (โทนธรรมชาติ)" if is_th else "Neutral Tone"
                 style_desc = "เหมาะกับการแต่งหน้าโทนชานม นู้ดเบจ สุภาพ เรียบหรู" if is_th else "Best with milk tea & rosy nude tones."
@@ -229,7 +232,7 @@ if uploaded_file is not None:
                 key = "Warm"
                 undertone_title = "Warm Tone (โทนอุ่น / ผิวโทนเหลือง-สองสี)" if is_th else "Warm Tone"
                 style_desc = "เหมาะกับการแต่งหน้าโทนส้มพีช คอรัล ให้ลุคผิวบ่มแดดสดใส" if is_th else "Best with warm peach & coral tones."
-        elif (b > g * 0.9) or (r - b < 25):
+        elif (b > g * 0.88) or (r - b < 20):
             key = "Cool"
             undertone_title = "Cool Tone (โทนเย็น / ผิวโทนชมพู)" if is_th else "Cool Tone"
             style_desc = "เหมาะกับการแต่งหน้าโทนชมพูนม ชมพูกุหลาบ ให้ลุคหน้าผ่อง สว่างใส สไตล์เกาหลี" if is_th else "Best with milky pink & rose tones."
@@ -242,7 +245,7 @@ if uploaded_file is not None:
         res_head = "💖 ผลการวิเคราะห์เมคอัพเฉพาะบุคคล GlamAI 💖" if is_th else "💖 GlamAI Personal Makeup Analysis 💖"
         st.markdown(f'<h3 style="color:#B85B74; text-align:center; margin-top:0;">{res_head}</h3>', unsafe_allow_html=True)
 
-        # แสดงค่า HEX และ RGB แบบรูปแรกโดยไม่มีรูปวงกลมตัวอย่างสีผิว
+        # แสดงค่า HEX และ RGB แบบข้อความเท่านั้น (ไม่มีรูปตัวอย่างสีผิว)
         st.markdown(
             f'🎨 <b>สีผิวที่สกัดได้อัตโนมัติ:</b> '
             f'<span class="color-pill" style="background-color:#2C3E50;">HEX: {hex_code}</span> | '
