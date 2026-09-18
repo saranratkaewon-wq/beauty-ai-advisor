@@ -3,9 +3,9 @@ import numpy as np
 from PIL import Image
 
 # ตั้งค่าหน้าเว็บ
-st.set_page_config(page_title="GlamAI : AI Beauty Advisor Project", page_icon="🎀", layout="centered")
+st.set_page_config(page_title="GlamAI : AI Beauty Advisor", page_icon="🎀", layout="centered")
 
-# CSS ตกแต่งธีมโครงงาน (แบบไม่มี Sidebar)
+# CSS ตกแต่งธีมโครงงาน
 st.markdown("""
 <style>
     .stApp {
@@ -29,29 +29,7 @@ st.markdown("""
         color: #8E485B !important;
         text-align: center;
         font-size: 0.95rem;
-        margin-bottom: 10px;
-    }
-
-    .project-badge {
-        background-color: #F2D6DC;
-        color: #8E485B;
-        text-align: center;
-        padding: 6px 12px;
-        border-radius: 20px;
-        font-size: 0.85rem;
-        font-weight: bold;
-        margin-bottom: 15px;
-        display: inline-block;
-        width: 100%;
-    }
-
-    .info-box {
-        background-color: #FFF0F3 !important;
-        border-left: 4px solid #B85B74;
-        padding: 12px 16px;
-        border-radius: 8px;
-        margin-bottom: 15px;
-        font-size: 0.9rem;
+        margin-bottom: 20px;
     }
 
     .result-card {
@@ -175,34 +153,14 @@ def extract_skin_color_accurate(img_array):
     r, g, b = int(avg_rgb[0]), int(avg_rgb[1]), int(avg_rgb[2])
     return r, g, b
 
-# ส่วนหัวข้อโครงงาน
+# ส่วนหัวข้อเว็บ
 st.markdown('<div class="main-title">🎀 GlamAI</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">ระบบวิเคราะห์อันเดอร์โทนสีผิวและแนะนำเครื่องสำอางอัจฉริยะด้วยการประมวลผลภาพ</div>', unsafe_allow_html=True)
-st.markdown('<div class="project-badge">📌 โครงงานคอมพิวเตอร์ ระดับชั้นมัธยมศึกษาปีที่ 5</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">ระบบวิเคราะห์อันเดอร์โทนสีผิวและแนะนำเครื่องสำอางอัจฉริยะ</div>', unsafe_allow_html=True)
 
 lang = st.selectbox("🌐 เปลี่ยนภาษา / Select Language", ["TH (ไทย)", "EN (English)"])
 is_th = "TH" in lang
 
 st.write("---")
-
-if is_th:
-    st.markdown("""
-    <div class="info-box">
-        <b>💡 คำแนะนำสำหรับการทดลองใช้งานเพื่อให้แม่นยำที่สุด:</b><br>
-        1. ☀️ ถ่ายในสถานที่ที่มี<b>แสงธรรมชาติ</b>สว่างทั่วถึง<br>
-        2. 👩‍🦰 หน้าตรง เปิดหน้าผากและแก้ม ไม่ให้มีเส้นผมบดบัง<br>
-        3. 🧴 ภาพหน้าสด (ไม่แต่งหน้า) เพื่อผลวิเคราะห์สีผิวจริง
-    </div>
-    """, unsafe_allow_html=True)
-else:
-    st.markdown("""
-    <div class="info-box">
-        <b>💡 Tips for Best Analysis Results:</b><br>
-        1. ☀️ Take photo in <b>natural light</b><br>
-        2. 👩‍🦰 Face straight forward and keep hair away from cheeks<br>
-        3. 🧴 Bare skin without makeup for true undertone detection
-    </div>
-    """, unsafe_allow_html=True)
 
 uploaded_file = st.file_uploader(
     "📷 ถ่ายรูป หรือ เลือกรูปภาพใบหน้าของคุณ" if is_th else "📷 Take a photo or select your face image", 
@@ -212,14 +170,14 @@ uploaded_file = st.file_uploader(
 if uploaded_file is not None:
     image = Image.open(uploaded_file).convert('RGB')
     
-    # 🔍 ระบบตรวจสอบแสง (Lighting Warning)
+    # ระบบตรวจสอบแสง
     gray_image = image.convert('L')
     brightness_val = np.mean(np.array(gray_image))
     
     if brightness_val < 60:
-        st.warning("⚠️ **คำเตือนจากระบบ:** รูปภาพค่อนข้างมืดเกินไป แนะนำให้ถ่ายในบริเวณที่มีแสงธรรมชาติสว่าง เพื่อความแม่นยำในการวิเคราะห์อันเดอร์โทน")
+        st.warning("⚠️ **คำเตือน:** รูปภาพค่อนข้างมืดเกินไป แนะนำให้ถ่ายในบริเวณที่มีแสงสว่างเพียงพอ")
     elif brightness_val > 220:
-        st.warning("⚠️ **คำเตือนจากระบบ:** รูปภาพสว่างจ้าหรือมีแสงสะท้อนมากเกินไป แนะนำให้เปลี่ยนมุมถ่ายภาพ")
+        st.warning("⚠️ **คำเตือน:** รูปภาพสว่างจ้าเกินไป แนะนำให้เปลี่ยนมุมถ่ายภาพ")
     
     st.image(image, caption="รูปภาพที่ใช้วิเคราะห์ (Input Image)" if is_th else "Analyzed Image", use_container_width=True)
     
@@ -251,7 +209,7 @@ if uploaded_file is not None:
             style_desc = "เหมาะกับการแต่งหน้าโทนชานม นู้ดเบจ สุภาพ เรียบหรู" if is_th else "Best with milk tea & rosy nude tones."
 
         st.markdown('<div class="result-card">', unsafe_allow_html=True)
-        res_head = "💖 ผลการวิเคราะห์จากระบบโครงงาน GlamAI 💖" if is_th else "💖 GlamAI Analysis Result 💖"
+        res_head = "💖 ผลการวิเคราะห์อันเดอร์โทนและเครื่องสำอาง 💖" if is_th else "💖 Analysis Result 💖"
         st.markdown(f'<h3 style="color:#B85B74; text-align:center; margin-top:0;">{res_head}</h3>', unsafe_allow_html=True)
 
         st.markdown(f"🌈 <b>ผลการจำแนกอันเดอร์โทน:</b> {undertone_title}", unsafe_allow_html=True)
@@ -273,7 +231,7 @@ if uploaded_file is not None:
         for item in EYESHADOW_DB[key]:
             st.markdown(render_swatch(item["hex"], item["name_th"] if is_th else item["name_en"]), unsafe_allow_html=True)
 
-        # 📥 สร้างข้อความสำหรับดาวน์โหลดผลลัพธ์ (Export Report)
+        # สร้างข้อความสำหรับดาวน์โหลดผลลัพธ์
         report_content = f"""=== GlamAI Analysis Report ===
 ผลการจำแนกอันเดอร์โทน: {undertone_title}
 คำแนะนำสไตล์เมคอัพ: {style_desc}
