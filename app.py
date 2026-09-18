@@ -1,8 +1,6 @@
 import streamlit as st
 import numpy as np
 from PIL import Image
-import cv2
-import mediapipe as mp
 
 # ตั้งค่าหน้าเว็บ
 st.set_page_config(page_title="GlamAI : Beauty AI Advisor", page_icon="🎀", layout="centered")
@@ -145,41 +143,23 @@ EYESHADOW_DB = {
 def render_swatch(hex_code, text):
     return f'<div style="margin-bottom:8px;"><span class="swatch-circle" style="background-color:{hex_code};"></span><span style="font-size:0.95rem;">{text}</span></div>'
 
-# ฟังก์ชันดึงเฉพาะสีบริเวณแก้มด้วย MediaPipe
-def extract_cheek_color(image_np):
-    mp_face_mesh = mp.solutions.face_mesh
-    h, w, _ = image_np.shape
+# ฟังก์ชันสกัดสีผิวบริเวณส่วนกลางภาพ (Center-Weighted Crop) และกรองแสงสะท้อน
+def extract_skin_color_safe(img_array):
+    h, w, _ = img_array.shape
+    # ครอปเฉพาะบริเวณกึ่งกลางภาพ (ส่วนแก้มและหน้า) หลบขอบและพื้นหลัง
+    crop_h_start, crop_h_end = int(h * 0.35), int(h * 0.65)
+    crop_w_start, crop_w_end = int(w * 0.25), int(w * 0.75)
+    center_area = img_array[crop_h_start:crop_h_end, crop_w_start:crop_w_end]
     
-    with mp_face_mesh.FaceMesh(static_image_mode=True, max_num_faces=1, refine_landmarks=True) as face_mesh:
-        results = face_mesh.process(image_np)
-        if not results.multi_face_landmarks:
-            return None
-        
-        landmarks = results.multi_face_landmarks[0].landmark
-        # จุดแลนด์มาร์กบริเวณโหนกแก้มซ้ายและขวา
-        cheek_indices = [50, 117, 118, 123, 280, 346, 347, 352]
-        
-        cheek_pixels = []
-        for idx in cheek_indices:
-            cx, cy = int(landmarks[idx].x * w), int(landmarks[idx].y * h)
-            # ดึงพิกเซลรอบๆ จุดแก้ม (Box 5x5)
-            y_min, y_max = max(0, cy-2), min(h, cy+3)
-            x_min, x_max = max(0, cx-2), min(w, cx+3)
-            region = image_np[y_min:y_max, x_min:x_max]
-            if region.size > 0:
-                cheek_pixels.append(region.reshape(-1, 3))
-        
-        if cheek_pixels:
-            all_cheek = np.vstack(cheek_pixels)
-            # ตัดจุดสะท้อนแสงขาวจ้าออก
-            brightness = 0.299 * all_cheek[:, 0] + 0.587 * all_cheek[:, 1] + 0.114 * all_cheek[:, 2]
-            valid_mask = (brightness > 30) & (brightness < 235)
-            filtered = all_cheek[valid_mask]
-            
-            if len(filtered) > 0:
-                return np.mean(filtered, axis=0)
-            return np.mean(all_cheek, axis=0)
-    return None
+    pixels = center_area.reshape(-1, 3)
+    # คำนวณความสว่างเพื่อกรองส่วนแสงสะท้อนจ้าและส่วนมืดเกินไป
+    brightness = 0.299 * pixels[:, 0] + 0.587 * pixels[:, 1] + 0.114 * pixels[:, 2]
+    valid_mask = (brightness > 40) & (brightness < 220)
+    filtered_pixels = pixels[valid_mask]
+    
+    if len(filtered_pixels) > 0:
+        return np.mean(filtered_pixels, axis=0)
+    return np.mean(pixels, axis=0)
 
 st.markdown('<div class="main-title">🎀 GlamAI</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-title">✨ Personal Color & Makeup Advisor ✨</div>', unsafe_allow_html=True)
@@ -220,24 +200,19 @@ if uploaded_file is not None:
     btn_label = "✨ เริ่มวิเคราะห์สีผิวและอันเดอร์โทน" if is_th else "✨ Analyze Skin Color & Undertone"
     if st.button(btn_label):
         img_array = np.array(image)
-        cheek_rgb = extract_cheek_color(img_array)
+        rgb_mean = extract_skin_color_safe(img_array)
+        r, g, b = rgb_mean[0], rgb_mean[1], rgb_mean[2]
 
-        if cheek_rgb is not None:
-            r, g, b = cheek_rgb[0], cheek_rgb[1], cheek_rgb[2]
-        else:
-            # Fallback หากหาใบหน้าไม่พบ
-            r, g, b = np.mean(img_array[:, :, 0]), np.mean(img_array[:, :, 1]), np.mean(img_array[:, :, 2])
-
-        # ปรับสูตรคำนวณแยกแยะอันเดอร์โทน (การตรวจจับ B/G ratio และ R-G-B Balance)
+        # ตรวจสอบการสมดุลสีและอันเดอร์โทน
+        rg_diff = r - g
         rb_diff = r - b
-        rg_ratio = r / max(1.0, g)
 
-        if (b > g * 0.85) and (rb_diff < 35):
+        if (b > g * 0.88) and (rb_diff < 30):
             key = "Cool"
             skin_type_desc = "ผิวขาว / ผิวอมชมพู (Cool Tone)" if is_th else "Fair / Cool Pink Skin"
             undertone_title = "Cool Tone (โทนเย็น / ผิวโทนชมพู)" if is_th else "Cool Tone"
             style_desc = "เหมาะกับการแต่งหน้าโทนชมพูนม ชมพูกุหลาบ ให้ลุคหน้าผ่อง สว่างใส สไตล์เกาหลี" if is_th else "Best with milky pink & rose tones."
-        elif (rg_ratio > 1.10) and (r > g) and (g > b):
+        elif (rg_diff > 12) and (r > g) and (g > b):
             key = "Warm"
             skin_type_desc = "ผิวสองสี / ผิวขาวเหลือง (Warm Tone)" if is_th else "Medium / Yellow Warm Skin"
             undertone_title = "Warm Tone (โทนอุ่น / ผิวโทนเหลือง-สองสี)" if is_th else "Warm Tone"
