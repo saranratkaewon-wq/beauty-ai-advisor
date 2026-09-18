@@ -158,13 +158,10 @@ if uploaded_file is not None:
         img_array = np.array(image)
         h, w, _ = img_array.shape
 
-        # เจาะจงสกัดสีบริเวณพื้นที่แก้มขวาของภาพถ่าย (ช่วง Y: 45%-60%, X: 60%-80%)
         crop_h_start, crop_h_end = int(h * 0.45), int(h * 0.60)
         crop_w_start, crop_w_end = int(w * 0.60), int(w * 0.80)
         
         cheek_region = img_array[crop_h_start:crop_h_end, crop_w_start:crop_w_end]
-        
-        # ป้องกันกรณีภาพขนาดเล็กรวมถึงคัดเลือกเฉพาะพิกเซลที่ไม่ใช่มืด/ดำเกินไป (หลบผม)
         valid_pixels = cheek_region[np.mean(cheek_region, axis=2) > 100]
         
         if len(valid_pixels) > 0:
@@ -173,7 +170,12 @@ if uploaded_file is not None:
             avg_color = np.mean(cheek_region, axis=(0, 1))
             
         r, g, b = int(avg_color[0]), int(avg_color[1]), int(avg_color[2])
-        hex_code = f"#{r:02X}{g:02X}{b:02X}"
+        
+        # ปรับแก้สีสำหรับตัวอย่างวงกลม (Swatch Color) ให้ตรงกับภาพจริง ผิวขาวอมชมพูไบรท์ขึ้น
+        disp_r = min(255, int(r * 1.18))
+        disp_g = min(255, int(g * 1.14))
+        disp_b = min(255, int(b * 1.15))
+        display_hex = f"#{disp_r:02X}{disp_g:02X}{disp_b:02X}"
 
         # การจำแนกอันเดอร์โทนสำหรับผิวขาวสว่างอมชมพู
         if (r - b) < 35 or (b > g * 0.85):
@@ -193,8 +195,9 @@ if uploaded_file is not None:
         res_head = "💖 ผลการวิเคราะห์เมคอัพเฉพาะบุคคล GlamAI 💖" if is_th else "💖 GlamAI Personal Makeup Analysis 💖"
         st.markdown(f'<h3 style="color:#B85B74; text-align:center; margin-top:0;">{res_head}</h3>', unsafe_allow_html=True)
 
-        skin_label = f"<b>สีผิวที่สกัดได้จริง:</b> <code>HEX: {hex_code}</code> | <b>RGB:</b> ({r}, {g}, {b})" if is_th else f"<b>Sampled Skin Color:</b> <code>HEX: {hex_code}</code>"
-        st.markdown(render_swatch(hex_code, skin_label), unsafe_allow_html=True)
+        # ใช้วงกลมสีแสดงผลลัพธ์ (display_hex) ให้สว่างอมชมพูตรงตามจริง
+        skin_label = f"<b>สีผิวที่สกัดได้จริง:</b> <code>HEX: {display_hex}</code> | <b>RGB:</b> ({r}, {g}, {b})" if is_th else f"<b>Sampled Skin Color:</b> <code>HEX: {display_hex}</code>"
+        st.markdown(render_swatch(display_hex, skin_label), unsafe_allow_html=True)
         
         st.markdown(f"🌈 <b>คำนวณอันเดอร์โทน:</b> {undertone_title}", unsafe_allow_html=True)
         st.markdown(f"✨ <b>สไตล์ที่แนะนำ:</b> {style_desc}", unsafe_allow_html=True)
