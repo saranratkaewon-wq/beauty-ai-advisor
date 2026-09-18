@@ -143,16 +143,14 @@ EYESHADOW_DB = {
 def render_swatch(hex_code, text):
     return f'<div style="margin-bottom:8px;"><span class="swatch-circle" style="background-color:{hex_code};"></span><span style="font-size:0.95rem;">{text}</span></div>'
 
-# ฟังก์ชันสกัดสีผิวบริเวณส่วนกลางภาพ (Center-Weighted Crop) และกรองแสงสะท้อน
+# ฟังก์ชันสกัดสีผิวบริเวณส่วนกลางภาพและกรองแสงสะท้อน
 def extract_skin_color_safe(img_array):
     h, w, _ = img_array.shape
-    # ครอปเฉพาะบริเวณกึ่งกลางภาพ (ส่วนแก้มและหน้า) หลบขอบและพื้นหลัง
     crop_h_start, crop_h_end = int(h * 0.35), int(h * 0.65)
     crop_w_start, crop_w_end = int(w * 0.25), int(w * 0.75)
     center_area = img_array[crop_h_start:crop_h_end, crop_w_start:crop_w_end]
     
     pixels = center_area.reshape(-1, 3)
-    # คำนวณความสว่างเพื่อกรองส่วนแสงสะท้อนจ้าและส่วนมืดเกินไป
     brightness = 0.299 * pixels[:, 0] + 0.587 * pixels[:, 1] + 0.114 * pixels[:, 2]
     valid_mask = (brightness > 40) & (brightness < 220)
     filtered_pixels = pixels[valid_mask]
@@ -203,7 +201,6 @@ if uploaded_file is not None:
         rgb_mean = extract_skin_color_safe(img_array)
         r, g, b = rgb_mean[0], rgb_mean[1], rgb_mean[2]
 
-        # ตรวจสอบการสมดุลสีและอันเดอร์โทน
         rg_diff = r - g
         rb_diff = r - b
 
