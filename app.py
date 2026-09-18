@@ -156,14 +156,11 @@ def render_swatch(hex_code, text):
 # ฟังก์ชันสกัดสีผิวและวิเคราะห์อย่างแม่นยำ
 def extract_skin_color_accurate(img_array):
     h, w, _ = img_array.shape
-    # ดึงค่าสีจากบริเวณใบหน้าส่วนแก้มและโหนกแก้ม
     crop_h_start, crop_h_end = int(h * 0.35), int(h * 0.65)
     crop_w_start, crop_w_end = int(w * 0.25), int(w * 0.75)
     center_area = img_array[crop_h_start:crop_h_end, crop_w_start:crop_w_end]
     
     pixels = center_area.reshape(-1, 3)
-    
-    # กรองเงามืดและแสงสะท้อนจ้าออก
     brightness = 0.299 * pixels[:, 0] + 0.587 * pixels[:, 1] + 0.114 * pixels[:, 2]
     valid_mask = (brightness > 70) & (brightness < 220)
     filtered_pixels = pixels[valid_mask]
@@ -188,10 +185,10 @@ st.write("---")
 if is_th:
     st.markdown("""
     <div class="info-box">
-        <b>💡 คำแนะนำสำหรับการถ่ายรูปเพื่อให้แม่นยำที่สุด:</b><br>
+        <b>💡 คำแนะนำสำหรับการถ่ายรูปหรือเลือกรูปเพื่อให้แม่นยำที่สุด:</b><br>
         1. ☀️ ถ่ายในสถานที่ที่มี<b>แสงธรรมชาติ</b>สว่างทั่วถึง<br>
-        2. 👩‍🦰 ถ่ายหน้าตรง เปิดหน้าผากและแก้ม ไม่ให้มีเส้นผมบดบัง<br>
-        3. 🧴 ถ่ายภาพหน้าสด (ไม่แต่งหน้า) เพื่อผลวิเคราะห์สีผิวจริง
+        2. 👩‍🦰 หน้าตรง เปิดหน้าผากและแก้ม ไม่ให้มีเส้นผม bดบัง<br>
+        3. 🧴 ภาพหน้าสด (ไม่แต่งหน้า) เพื่อผลวิเคราะห์สีผิวจริง
     </div>
     """, unsafe_allow_html=True)
 else:
@@ -204,20 +201,19 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
-# กล้องถ่ายรูปเปิดใช้งานทันที ไม่ต้องกดปุ่มหรืออัปโหลด
-camera_photo = st.camera_input("📷 ถ่ายรูปใบหน้าของคุณ" if is_th else "📷 Take a photo of your face")
+# รองรับทั้งการเลือกรูปภาพจากเครื่อง/อัลบั้ม หรือกดถ่ายด้วยกล้องได้ทันทีในปุ่มเดียว
+uploaded_file = st.file_uploader(
+    "📷 ถ่ายรูป หรือ เลือกรูปภาพใบหน้าของคุณจากเครื่อง" if is_th else "📷 Take a photo or select your face image", 
+    type=["jpg", "jpeg", "png"]
+)
 
-if camera_photo is not None:
-    image = Image.open(camera_photo).convert('RGB')
+if uploaded_file is not None:
+    image = Image.open(uploaded_file).convert('RGB')
     
     btn_label = "✨ เริ่มวิเคราะห์สีผิวและอันเดอร์โทน" if is_th else "✨ Analyze Skin Color & Undertone"
     if st.button(btn_label):
         img_array = np.array(image)
         r, g, b, hex_code = extract_skin_color_accurate(img_array)
-
-        # การคำนวณอันเดอร์โทนแบบแม่นยำ
-        # ตรวจจับระดับความสว่างผิว
-        skin_brightness = (r + g + b) / 3
 
         if (r > g) and (g > b):
             if (r - b) > 35 and (g - b) > 15:
@@ -245,7 +241,6 @@ if camera_photo is not None:
         res_head = "💖 ผลการวิเคราะห์เมคอัพเฉพาะบุคคล GlamAI 💖" if is_th else "💖 GlamAI Personal Makeup Analysis 💖"
         st.markdown(f'<h3 style="color:#B85B74; text-align:center; margin-top:0;">{res_head}</h3>', unsafe_allow_html=True)
 
-        # แสดงค่า HEX และ RGB แบบข้อความเท่านั้น (ไม่มีรูปตัวอย่างสีผิว)
         st.markdown(
             f'🎨 <b>สีผิวที่สกัดได้อัตโนมัติ:</b> '
             f'<span class="color-pill" style="background-color:#2C3E50;">HEX: {hex_code}</span> | '
