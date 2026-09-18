@@ -159,7 +159,7 @@ LIP_DB = {
     ]
 }
 
-# ฐานข้อมูลอายแชโดว์ (ปรับแต่งเฉดสีตรงตามพาเลตต์จริง)
+# ฐานข้อมูลอายแชโดว์
 EYESHADOW_DB = {
     "Warm": [
         {"name_th": "4U2 #03 Wanted — โทนชมพูอมส้มพีช คอรัลอุ่น น้ำตาลอิฐ", "name_en": "4U2 #03 Wanted — Warm Coral Peach & Brick Brown", "hex": "#D4735B"},
@@ -244,7 +244,7 @@ if st.button(btn_text, type="primary"):
     else:
         st.balloons()
         
-        # คัดแยกโทน
+        # คัดแยกโทนและกำหนดค่า RGB ไม่ให้เกิด NameError
         if "Warm" in tone_selection:
             key = "Warm"
             undertone_title = "Warm Autumn / Warm Spring Tone (โทนอุ่น)" if is_th else "Warm Autumn / Spring Tone"
@@ -254,6 +254,7 @@ if st.button(btn_text, type="primary"):
             key = "Cool"
             undertone_title = "Cool Summer / Cool Winter Tone (โทนเย็น)" if is_th else "Cool Summer / Winter Tone"
             style_desc = "เหมาะกับการแต่งหน้าโทนชมพูนม ชมพูกุหลาบ เบอร์รี่ ให้ลุคหน้าผ่อง สว่างใส ละมุนแบบสไตล์เกาหลี" if is_th else "Best suited for milky pink, rose, and berry shades for a soft, brightened Korean look."
+            r, g, b = 235, 190, 195
         else:
             key = "Neutral"
             undertone_title = "Neutral Chic Tone (โทนธรรมชาติ)" if is_th else "Neutral Chic Tone"
