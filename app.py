@@ -212,6 +212,15 @@ uploaded_file = st.file_uploader(
 if uploaded_file is not None:
     image = Image.open(uploaded_file).convert('RGB')
     
+    # 🔍 ระบบตรวจสอบแสง (Lighting Warning)
+    gray_image = image.convert('L')
+    brightness_val = np.mean(np.array(gray_image))
+    
+    if brightness_val < 60:
+        st.warning("⚠️ **คำเตือนจากระบบ:** รูปภาพค่อนข้างมืดเกินไป แนะนำให้ถ่ายในบริเวณที่มีแสงธรรมชาติสว่าง เพื่อความแม่นยำในการวิเคราะห์อันเดอร์โทน")
+    elif brightness_val > 220:
+        st.warning("⚠️ **คำเตือนจากระบบ:** รูปภาพสว่างจ้าหรือมีแสงสะท้อนมากเกินไป แนะนำให้เปลี่ยนมุมถ่ายภาพ")
+    
     st.image(image, caption="รูปภาพที่ใช้วิเคราะห์ (Input Image)" if is_th else "Analyzed Image", use_container_width=True)
     
     btn_label = "✨ เริ่มประมวลผลและวิเคราะห์อันเดอร์โทน" if is_th else "✨ Run Undertone Analysis"
@@ -263,5 +272,36 @@ if uploaded_file is not None:
         st.markdown(f'<div class="section-head">พาเลตต์ตาที่แนะนำ (Recommended Eyeshadow)</div>' if is_th else '<div class="section-head">Eyeshadow</div>', unsafe_allow_html=True)
         for item in EYESHADOW_DB[key]:
             st.markdown(render_swatch(item["hex"], item["name_th"] if is_th else item["name_en"]), unsafe_allow_html=True)
+
+        # 📥 สร้างข้อความสำหรับดาวน์โหลดผลลัพธ์ (Export Report)
+        report_content = f"""=== GlamAI Analysis Report ===
+ผลการจำแนกอันเดอร์โทน: {undertone_title}
+คำแนะนำสไตล์เมคอัพ: {style_desc}
+
+--- Recommended Products ---
+[Foundation]
+"""
+        for item in FOUNDATION_DB[key]:
+            report_content += f"- {item['name_th']}\n"
+            
+        report_content += "\n[Blush]\n"
+        for item in BLUSH_DB[key]:
+            report_content += f"- {item['name_th']}\n"
+            
+        report_content += "\n[Lipstick]\n"
+        for item in LIP_DB[key]:
+            report_content += f"- {item['name_th']}\n"
+            
+        report_content += "\n[Eyeshadow]\n"
+        for item in EYESHADOW_DB[key]:
+            report_content += f"- {item['name_th']}\n"
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.download_button(
+            label="📥 ดาวน์โหลดผลการวิเคราะห์ (Export Report)",
+            data=report_content,
+            file_name="GlamAI_Analysis_Report.txt",
+            mime="text/plain"
+        )
 
         st.markdown('</div>', unsafe_allow_html=True)
