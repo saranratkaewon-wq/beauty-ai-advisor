@@ -153,17 +153,14 @@ EYESHADOW_DB = {
 def render_swatch(hex_code, text):
     return f'<div style="margin-bottom:8px;"><span class="swatch-circle" style="background-color:{hex_code};"></span><span style="font-size:0.95rem;">{text}</span></div>'
 
-# ฟังก์ชันสกัดสีผิวและแปลงเป็น HEX/RGB เฉพาะแบบเวอร์ชันแรก
+# ฟังก์ชันสกัดสีผิวและแปลงเป็น HEX/RGB
 def extract_skin_color_v1(img_array):
     h, w, _ = img_array.shape
-    # สุ่มพื้นที่ตรงกลางใบหน้า (ส่วนแก้มและโหนกแก้ม)
     crop_h_start, crop_h_end = int(h * 0.40), int(h * 0.60)
     crop_w_start, crop_w_end = int(w * 0.30), int(w * 0.70)
     center_area = img_array[crop_h_start:crop_h_end, crop_w_start:crop_w_end]
     
     pixels = center_area.reshape(-1, 3)
-    
-    # กรองความสว่างจ้าหรือเงามืดเกินไปออก
     brightness = 0.299 * pixels[:, 0] + 0.587 * pixels[:, 1] + 0.114 * pixels[:, 2]
     valid_mask = (brightness > 60) & (brightness < 230)
     filtered_pixels = pixels[valid_mask]
@@ -218,7 +215,7 @@ if uploaded_file is not None:
         img_array = np.array(image)
         r, g, b, hex_code = extract_skin_color_v1(img_array)
 
-        # การคำนวณอันเดอร์โทนแบบเวอร์ชันแรก
+        # การคำนวณอันเดอร์โทน
         if (r > g) and (g > b):
             if (r - b) > 40 and (g - b) > 20:
                 key = "Warm"
@@ -245,10 +242,9 @@ if uploaded_file is not None:
         res_head = "💖 ผลการวิเคราะห์เมคอัพเฉพาะบุคคล GlamAI 💖" if is_th else "💖 GlamAI Personal Makeup Analysis 💖"
         st.markdown(f'<h3 style="color:#B85B74; text-align:center; margin-top:0;">{res_head}</h3>', unsafe_allow_html=True)
 
-        # แสดงแถบสี HEX และ RGB แบบเวอร์ชันแรก
+        # แสดงค่า HEX และ RGB แบบรูปแรกโดยไม่มีรูปวงกลมตัวอย่างสีผิว
         st.markdown(
             f'🎨 <b>สีผิวที่สกัดได้อัตโนมัติ:</b> '
-            f'<span class="swatch-circle" style="background-color:{hex_code};"></span>'
             f'<span class="color-pill" style="background-color:#2C3E50;">HEX: {hex_code}</span> | '
             f'<b>RGB:</b> ({r}, {g}, {b})', 
             unsafe_allow_html=True
