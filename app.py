@@ -72,16 +72,6 @@ st.markdown("""
         box-shadow: 0 2px 4px rgba(0,0,0,0.15);
     }
 
-    .color-pill {
-        display: inline-block;
-        padding: 2px 8px;
-        border-radius: 4px;
-        color: white;
-        font-weight: bold;
-        font-family: monospace;
-        font-size: 0.85rem;
-    }
-
     .stButton>button {
         width: 100%;
         background-color: #B85B74 !important;
@@ -153,7 +143,6 @@ EYESHADOW_DB = {
 def render_swatch(hex_code, text):
     return f'<div style="margin-bottom:8px;"><span class="swatch-circle" style="background-color:{hex_code};"></span><span style="font-size:0.95rem;">{text}</span></div>'
 
-# ฟังก์ชันสกัดสีผิวและวิเคราะห์อย่างแม่นยำ
 def extract_skin_color_accurate(img_array):
     h, w, _ = img_array.shape
     crop_h_start, crop_h_end = int(h * 0.35), int(h * 0.65)
@@ -171,8 +160,7 @@ def extract_skin_color_accurate(img_array):
         avg_rgb = np.mean(pixels, axis=0)
         
     r, g, b = int(avg_rgb[0]), int(avg_rgb[1]), int(avg_rgb[2])
-    hex_code = f"#{r:02X}{g:02X}{b:02X}"
-    return r, g, b, hex_code
+    return r, g, b
 
 st.markdown('<div class="main-title">🎀 GlamAI</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-title">✨ Personal Color & Makeup Advisor ✨</div>', unsafe_allow_html=True)
@@ -187,7 +175,7 @@ if is_th:
     <div class="info-box">
         <b>💡 คำแนะนำสำหรับการถ่ายรูปหรือเลือกรูปเพื่อให้แม่นยำที่สุด:</b><br>
         1. ☀️ ถ่ายในสถานที่ที่มี<b>แสงธรรมชาติ</b>สว่างทั่วถึง<br>
-        2. 👩‍🦰 หน้าตรง เปิดหน้าผากและแก้ม ไม่ให้มีเส้นผม bดบัง<br>
+        2. 👩‍🦰 หน้าตรง เปิดหน้าผากและแก้ม ไม่ให้มีเส้นผมบดบัง<br>
         3. 🧴 ภาพหน้าสด (ไม่แต่งหน้า) เพื่อผลวิเคราะห์สีผิวจริง
     </div>
     """, unsafe_allow_html=True)
@@ -201,19 +189,21 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
-# รองรับทั้งการเลือกรูปภาพจากเครื่อง/อัลบั้ม หรือกดถ่ายด้วยกล้องได้ทันทีในปุ่มเดียว
 uploaded_file = st.file_uploader(
-    "📷 ถ่ายรูป หรือ เลือกรูปภาพใบหน้าของคุณจากเครื่อง" if is_th else "📷 Take a photo or select your face image", 
+    "📷 ถ่ายรูป หรือ เลือกรูปภาพใบหน้าของคุณ" if is_th else "📷 Take a photo or select your face image", 
     type=["jpg", "jpeg", "png"]
 )
 
 if uploaded_file is not None:
     image = Image.open(uploaded_file).convert('RGB')
     
-    btn_label = "✨ เริ่มวิเคราะห์สีผิวและอันเดอร์โทน" if is_th else "✨ Analyze Skin Color & Undertone"
+    # แสดงรูปภาพที่ใช้ในการวิเคราะห์
+    st.image(image, caption="รูปภาพที่ใช้วิเคราะห์" if is_th else "Analyzed Image", use_container_width=True)
+    
+    btn_label = "✨ เริ่มวิเคราะห์อันเดอร์โทน" if is_th else "✨ Analyze Undertone"
     if st.button(btn_label):
         img_array = np.array(image)
-        r, g, b, hex_code = extract_skin_color_accurate(img_array)
+        r, g, b = extract_skin_color_accurate(img_array)
 
         if (r > g) and (g > b):
             if (r - b) > 35 and (g - b) > 15:
@@ -241,12 +231,7 @@ if uploaded_file is not None:
         res_head = "💖 ผลการวิเคราะห์เมคอัพเฉพาะบุคคล GlamAI 💖" if is_th else "💖 GlamAI Personal Makeup Analysis 💖"
         st.markdown(f'<h3 style="color:#B85B74; text-align:center; margin-top:0;">{res_head}</h3>', unsafe_allow_html=True)
 
-        st.markdown(
-            f'🎨 <b>สีผิวที่สกัดได้อัตโนมัติ:</b> '
-            f'<span class="color-pill" style="background-color:#2C3E50;">HEX: {hex_code}</span> | '
-            f'<b>RGB:</b> ({r}, {g}, {b})', 
-            unsafe_allow_html=True
-        )
+        # ตัดบรรทัดแสดงสีผิวออกตามต้องการ เหลือเพียงผลการวิเคราะห์อันเดอร์โทนและสไตล์
         st.markdown(f"🌈 <b>คำนวณอันเดอร์โทน:</b> {undertone_title}", unsafe_allow_html=True)
         st.markdown(f"✨ <b>สไตล์ที่แนะนำ:</b> {style_desc}", unsafe_allow_html=True)
         
