@@ -1,5 +1,3 @@
 streamlit
 numpy
 Pillow
-mediapipe
-opencv-python-headless
