@@ -1,5 +1,4 @@
 import streamlit as st
-import cv2
 import numpy as np
 from PIL import Image
 
@@ -139,20 +138,19 @@ uploaded_file = st.file_uploader(
 )
 
 if uploaded_file is not None:
-    # อ่านไฟล์รูป
+    # อ่านไฟล์รูปด้วย PIL
     image = Image.open(uploaded_file).convert('RGB')
-    st.image(image, caption="รูปภาพที่อัปโหลด" if is_th else "Uploaded Image", use_column_width=True)
+    st.image(image, caption="รูปภาพที่อัปโหลด" if is_th else "Uploaded Image", use_container_width=True)
     
     img_array = np.array(image)
     h, w, _ = img_array.shape
 
-    # สกัดสีบริเวณตรงกลางภาพ (พื้นที่แก้ม/ใบหน้า) อัตโนมัติ
+    # สกัดสีบริเวณช่วงกลางภาพอัตโนมัติ
     crop_h_start, crop_h_end = int(h * 0.4), int(h * 0.6)
     crop_w_start, crop_w_end = int(w * 0.4), int(w * 0.6)
     
     center_region = img_array[crop_h_start:crop_h_end, crop_w_start:crop_w_end]
-    avg_color_per_row = np.average(center_region, axis=0)
-    avg_color = np.average(avg_color_per_row, axis=0)
+    avg_color = np.mean(center_region, axis=(0, 1))
     
     r, g, b = int(avg_color[0]), int(avg_color[1]), int(avg_color[2])
     hex_code = f"#{r:02X}{g:02X}{b:02X}"
