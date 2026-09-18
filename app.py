@@ -123,7 +123,6 @@ EYESHADOW_DB = {
 def render_swatch(hex_code, text):
     return f'<div style="margin-bottom:8px;"><span class="swatch-circle" style="background-color:{hex_code};"></span><span style="font-size:0.95rem;">{text}</span></div>'
 
-# แสดงส่วนบนของเว็บ
 st.markdown('<div class="main-title">🎀 GlamAI</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-title">✨ Automatic Personal Color & Makeup Advisor ✨</div>', unsafe_allow_html=True)
 
@@ -138,29 +137,34 @@ uploaded_file = st.file_uploader(
 )
 
 if uploaded_file is not None:
-    # อ่านไฟล์รูปด้วย PIL
     image = Image.open(uploaded_file).convert('RGB')
     st.image(image, caption="รูปภาพที่อัปโหลด" if is_th else "Uploaded Image", use_container_width=True)
     
     img_array = np.array(image)
     h, w, _ = img_array.shape
 
-    # สกัดสีบริเวณช่วงกลางภาพอัตโนมัติ
-    crop_h_start, crop_h_end = int(h * 0.4), int(h * 0.6)
-    crop_w_start, crop_w_end = int(w * 0.4), int(w * 0.6)
+    # สกัดสีเฉพาะพื้นที่แก้มฝั่งขวา (ช่วงขวาของภาพ เพื่อให้ตรงกับตำแหน่งแก้มในรูปถ่าย selfie)
+    crop_h_start, crop_h_end = int(h * 0.45), int(h * 0.55)
+    crop_w_start, crop_w_end = int(w * 0.55), int(w * 0.70)
     
-    center_region = img_array[crop_h_start:crop_h_end, crop_w_start:crop_w_end]
-    avg_color = np.mean(center_region, axis=(0, 1))
+    cheek_region = img_array[crop_h_start:crop_h_end, crop_w_start:crop_w_end]
+    
+    # หากพื้นที่แคบเกินไป ให้ขยายการดึงสี
+    if cheek_region.size == 0:
+        cheek_region = img_array[int(h*0.4):int(h*0.6), int(w*0.4):int(w*0.6)]
+        
+    avg_color = np.mean(cheek_region, axis=(0, 1))
     
     r, g, b = int(avg_color[0]), int(avg_color[1]), int(avg_color[2])
     hex_code = f"#{r:02X}{g:02X}{b:02X}"
 
-    # วิเคราะห์อันเดอร์โทนอัตโนมัติ
-    if (r - b) < 32 or (b > g * 0.82):
+    # ปรับอัลกอริทึมจำแนกอันเดอร์โทนให้แม่นยำ
+    # ผิวโทนเย็น (Cool Tone): สัดส่วนสีฟ้า/แดงสูง หรือ R ใกล้เคียง G/B
+    if (r - b) < 20 or (b > g * 0.88):
         key = "Cool"
         undertone_title = "Cool Tone (โทนเย็น / ผิวโทนชมพู)" if is_th else "Cool Tone"
         style_desc = "เหมาะกับการแต่งหน้าโทนชมพูนม ชมพูกุหลาบ ให้ลุคหน้าผ่อง สว่างใส สไตล์เกาหลี" if is_th else "Best with milky pink & rose tones."
-    elif (r - b) > 48 and (g - b) > 22:
+    elif (r - g) > 25 and (g - b) > 15:
         key = "Warm"
         undertone_title = "Warm Tone (โทนอุ่น / ผิวโทนเหลือง-สองสี)" if is_th else "Warm Tone"
         style_desc = "เหมาะกับการแต่งหน้าโทนส้มพีช คอรัล ให้ลุคผิวบ่มแดดสดใส" if is_th else "Best with warm peach & coral tones."
@@ -169,7 +173,6 @@ if uploaded_file is not None:
         undertone_title = "Neutral Tone (โทนธรรมชาติ)" if is_th else "Neutral Tone"
         style_desc = "เหมาะกับการแต่งหน้าโทนชานม นู้ดเบจ สุภาพ เรียบหรู" if is_th else "Best with milk tea & rosy nude tones."
 
-    # แสดงผลลัพธ์
     st.markdown('<div class="result-card">', unsafe_allow_html=True)
     res_head = "💖 ผลการวิเคราะห์เมคอัพเฉพาะบุคคล GlamAI 💖" if is_th else "💖 GlamAI Personal Makeup Analysis 💖"
     st.markdown(f'<h3 style="color:#B85B74; text-align:center; margin-top:0;">{res_head}</h3>', unsafe_allow_html=True)
