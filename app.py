@@ -3,7 +3,6 @@ import numpy as np
 import random
 from PIL import Image
 
-# ฐานข้อมูลผลิตภัณฑ์ พร้อมระบุค่าสี Hex Code ตัวอย่างของแต่ละเฉดสีสำหรับแสดงผล
 DATABASE = {
     "TH": {
         "foundations": {
@@ -134,14 +133,18 @@ LANGUAGES = {
     }
 }
 
-st.sidebar.title("Settings / ตั้งค่า")
-lang = st.sidebar.selectbox("Language / ภาษา", ["TH", "EN"])
+st.title("AI Beauty Advisor & Color Mapping")
+st.write("โครงงานวิทยาศาสตร์: ระบบแนะนำเฉดสีเครื่องสำอางเฉพาะบุคคล / Science Project: Personalized Cosmetic Shade Recommender")
+
+# ย้ายปุ่มเลือกภาษามาไว้ตรงกลางหน้าจอหลัก (ใช้ columns จัดวางให้อยู่สวยงาม)
+col1, col2, col3 = st.columns([1, 2, 1])
+with col2:
+    lang = st.selectbox("🌐 Select Language / เลือกภาษา", ["TH", "EN"])
+
 t = LANGUAGES[lang]
 db = DATABASE[lang]
 
-st.title(t["title"])
-st.write(t["subtitle"])
-
+st.markdown("---")
 uploaded_file = st.file_uploader(t["upload_label"], type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
@@ -151,7 +154,6 @@ if uploaded_file is not None:
     img_np = np.array(img)
     height, width, _ = img_np.shape
     
-    # ดึงค่าสีผิวเพื่อใช้สุ่มเลือกสีตามใบหน้าจริง
     crop_margin_h = int(height * 0.25)
     crop_margin_w = int(width * 0.25)
     center_region = img_np[crop_margin_h:height-crop_margin_h, crop_margin_w:width-crop_margin_w]
@@ -167,11 +169,9 @@ if uploaded_file is not None:
     r, g, b = base_rgb
     avg_brightness = np.mean(base_rgb)
     
-    # สร้าง Seed จากพิกเซลภาพ เพื่อให้ทดสอบเปลี่ยนรูปคนอื่นแล้วสีเปลี่ยนตามบุคคลทันที
     img_seed = int(r + g + b)
     random.seed(img_seed)
     
-    # จัดหมวดหมู่ความสว่างผิวเพื่อเลือกรองพื้น
     if avg_brightness > 175:
         skin_type_key = "light"
     elif avg_brightness > 120:
@@ -184,20 +184,18 @@ if uploaded_file is not None:
     matched_lip = random.choice(db["lips"])
     matched_eye = random.choice(db["eyes"])
     
-    # --- แสดงผลเฉพาะสีที่เหมาะสมและมีตัวอย่างสีโชว์ทุกอัน (ไม่มีผลวิเคราะห์สภาพผิวรกๆ แล้ว) ---
     st.markdown("---")
     st.subheader(t["matched_found"])
     
     def render_color_item(label, item):
         st.markdown(f"**{label}:** {item['name']}")
-        st.markdown(f'<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;"><div style="width: 35px; height: 35px; background-color: {item["hex"]}; border-radius: 6px; border: 1.5px solid #bbb;"></div><span style="font-size: 14px; color: #555;">Color Code / Swatch: <code>{item["hex"]}</code></span></div>', unsafe_auth_html=True if "unsafe_auth_html" in st.markdown.__code__.co_varnames else False, unsafe_allow_html=True)
+        st.markdown(f'<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;"><div style="width: 35px; height: 35px; background-color: {item["hex"]}; border-radius: 6px; border: 1.5px solid #bbb;"></div><span style="font-size: 14px; color: #555;">Color Code / Swatch: <code>{item["hex"]}</code></span></div>', unsafe_allow_html=True)
 
     render_color_item(t['foundation'], matched_fd)
     render_color_item(t['blush'], matched_blush)
     render_color_item(t['lip'], matched_lip)
     render_color_item(t['eye'], matched_eye)
     
-    # ขั้นตอนเตรียมผิว
     st.markdown("---")
     st.subheader(t["prep_title"])
     for step in t["prep_steps"]:
