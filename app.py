@@ -134,37 +134,37 @@ LANGUAGES = {
     "TH": {
         "title": "AI Beauty Advisor & Color Mapping",
         "subtitle": "ระบบแนะนำเฉดสีเครื่องสำอางเฉพาะบุคคลสำหรับโครงงานวิทยาศาสตร์",
-        "upload_label": "📸 อัปโหลดรูปภาพใบหน้า หรือถ่ายภาพจากกล้องเพื่อเลือกเฉดสีที่เหมาะสม",
+        "upload_label": "📸 อัปโหลดรูปภาพใบหน้า หรือถ่ายภาพจากกล้องเพื่อวิเคราะห์และเลือกเฉดสีที่เหมาะสม",
         "matched_found": "✨ เฉดสีผลิตภัณฑ์ที่คัดเลือกและเหมาะกับใบหน้านี้",
         "foundation": "รองพื้น (Foundation)",
         "blush": "บลัชออน (Blush On)",
         "lip": "ลิปสติก (Lipstick)",
         "eye": "อายแชโดว์ (Eyeshadow)",
-        "prep_title": "💡 ขั้นตอนการเตรียมผิวหน้า (Skincare & Prep Steps)",
+        "prep_title": "💡 คำแนะนำและขั้นตอนการเตรียมผิวหน้าก่อนแต่งหน้า (Skincare & Prep Steps)",
         "prep_steps": [
-            "**1. ทำความสะอาดผิวหน้า (Cleanse):** ล้างหน้าด้วยเจลหรือโฟมล้างหน้าที่เหมาะกับสภาพผิว เพื่อขจัดความมันส่วนเกินและสิ่งสกปรกที่ตกค้าง",
-            "**2. ปรับสมดุลผิว (Tone):** เช็ดหน้าด้วยโทนเนอร์เบาๆ เพื่อเตรียมผิวให้พร้อมรับการบำรุง และช่วยกระชับรูขุมขน",
-            "**3. เติมความชุ่มชื้น (Moisturize):** ทาเซรั่มและมอยส์เจอร์ไรเซอร์ให้ทั่วใบหน้าและลำคอ *(Tip: รอครีมซึม 1-2 นาทีก่อนแต่งหน้า)*",
-            "**4. ทาครีมกันแดด (Sunscreen):** สำคัญมาก! บีบกันแดดในปริมาณที่เหมาะสม (ประมาณ 2 ข้อนิ้วมือ) เกลี่ยให้ทั่วใบหน้าและลำคอ",
-            "**5. ลงไพร์เมอร์ (Primer):** ทาไพร์เมอร์เฉพาะจุด T-zone (หน้าผาก จมูก คาง) เพื่อเบลอรูขุมขนและล็อกเมคอัพให้ติดทน"
+            "**1. ทำความสะอาดผิวหน้า (Cleanse):** ล้างหน้าด้วยเจลหรือโฟมล้างหน้าที่อ่อนโยนและเหมาะกับสภาพผิว เพื่อขจัดความมันส่วนเกิน สิ่งสกปรก และคราบเหงื่อที่ตกค้างบนใบหน้า",
+            "**2. ปรับสมดุลผิว (Tone):** เช็ดทำความสะอาดและปรับสภาพผิวด้วยโทนเนอร์สูตรอ่อนโยน เพื่อคืนค่า pH ให้ผิว พร้อมเตรียมผิวให้พร้อมรับการบำรุงในขั้นตอนถัดไป",
+            "**3. เติมความชุ่มชื้น (Moisturize):** บำรุงผิวด้วยเซรั่มและมอยส์เจอร์ไรเซอร์ให้ทั่วใบหน้าและลำคอ <br><em>(💡 ทริคสำคัญ: ควรเว้นระยะเวลาให้ครีมบำรุงซึมเข้าสู่ผิวประมาณ 1–2 นาที ก่อนเริ่มแต่งหน้า เพื่อป้องกันการเกิดคราบขุยจากผลิตภัณฑ์ดูแลผิว)</em>",
+            "**4. ทาครีมกันแดด (Sunscreen):** ขั้นตอนที่สำคัญที่สุดเพื่อปกป้องผิวจากรังสียูวี ควรทาในปริมาณที่เหมาะสม (ประมาณ 2 ข้อนิ้วมือ) เกลี่ยให้ทั่วใบหน้าและลำคออย่างสม่ำเสมอ",
+            "**5. ลงไพร์เมอร์เพื่อเตรียมผิว (Primer - Optional):** ทาไพร์เมอร์เฉพาะจุดบริเวณ T-zone (หน้าผาก จมูก และคาง) ที่มีปัญหารูขุมขนกว้างหรือผลิตความมันส่วนเกิน เพื่อช่วยเบลอรูขุมขนและล็อกเมคอัพให้ติดทนนานตลอดวัน"
         ]
     },
     "EN": {
         "title": "AI Beauty Advisor & Color Mapping",
         "subtitle": "Personalized Cosmetic Shade Recommender for Science Project",
-        "upload_label": "📸 Upload face image or take a photo to match shades",
+        "upload_label": "📸 Upload face image or take a photo to analyze and match shades",
         "matched_found": "✨ Dynamically Matched Product Shades For This Face",
         "foundation": "Foundation",
         "blush": "Blush On",
         "lip": "Lipstick",
         "eye": "Eyeshadow",
-        "prep_title": "💡 Skincare & Prep Steps",
+        "prep_title": "💡 Skincare & Skin Preparation Steps",
         "prep_steps": [
-            "**1. Cleanse:** Wash face with suitable cleanser to remove excess oil and impurities.",
-            "**2. Tone:** Apply gentle toner to balance skin and prep for skincare.",
-            "**3. Moisturize:** Apply serum and moisturizer evenly.",
-            "**4. Sunscreen:** Essential! Apply proper amount (about 2 finger lengths) of sunscreen.",
-            "**5. Primer:** Apply on T-zone to blur pores and lock in makeup."
+            "**1. Cleanse:** Wash your face with a gentle cleanser suitable for your skin type to remove excess oil, dirt, and impurities.",
+            "**2. Tone:** Apply a gentle toner to balance skin pH and prep the skin barrier for better product absorption.",
+            "**3. Moisturize:** Apply serum and moisturizer evenly across the face and neck. <br><em>(💡 Pro Tip: Allow 1–2 minutes for skincare products to fully absorb before applying makeup to prevent pilling.)</em>",
+            "**4. Sunscreen:** Essential step to protect skin from UV rays. Apply an adequate amount (about two finger-lengths) evenly over the face and neck.",
+            "**5. Primer (Optional):** Apply primer specifically on the T-zone (forehead, nose, chin) to blur pores, control excess oil, and lock in makeup for long-lasting wear."
         ]
     }
 }
@@ -181,7 +181,7 @@ t = LANGUAGES[lang]
 db = DATABASE[lang]
 
 st.markdown("---")
-# ใช้ file_uploader ตัวเดียว (สามารถกดเลือกรูปจากอัลบั้มหรือถ่ายรูปด้วยกล้องจากเมนูของระบบได้ทันทีโดยไม่ซ้ำซ้อน)
+# ใช้ file_uploader ตัวเดียว (รองรับทั้งอัปโหลดภาพและกดถ่ายรูปจากกล้องในตัว)
 uploaded_file = st.file_uploader(t["upload_label"], type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
@@ -236,4 +236,4 @@ if uploaded_file is not None:
     st.markdown("---")
     st.subheader(t["prep_title"])
     for step in t["prep_steps"]:
-        st.markdown(f"- {step}")
+        st.markdown(f"- {step}", unsafe_allow_html=True)
