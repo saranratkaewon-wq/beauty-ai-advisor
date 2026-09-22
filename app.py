@@ -134,7 +134,7 @@ LANGUAGES = {
     "TH": {
         "title": "AI Beauty Advisor & Color Mapping",
         "subtitle": "ระบบแนะนำเฉดสีเครื่องสำอางเฉพาะบุคคลสำหรับโครงงานวิทยาศาสตร์",
-        "upload_label": "📸 อัปโหลดรูปภาพใบหน้า หรือถ่ายภาพเพื่อเลือกเฉดสีที่เหมาะสม",
+        "upload_label": "📸 อัปโหลดรูปภาพใบหน้า หรือถ่ายภาพจากกล้องเพื่อเลือกเฉดสีที่เหมาะสม",
         "matched_found": "✨ เฉดสีผลิตภัณฑ์ที่คัดเลือกและเหมาะกับใบหน้านี้",
         "foundation": "รองพื้น (Foundation)",
         "blush": "บลัชออน (Blush On)",
@@ -152,7 +152,7 @@ LANGUAGES = {
     "EN": {
         "title": "AI Beauty Advisor & Color Mapping",
         "subtitle": "Personalized Cosmetic Shade Recommender for Science Project",
-        "upload_label": "📸 Upload or capture test subject face image to match shades",
+        "upload_label": "📸 Upload face image or take a photo to match shades",
         "matched_found": "✨ Dynamically Matched Product Shades For This Face",
         "foundation": "Foundation",
         "blush": "Blush On",
@@ -181,14 +181,8 @@ t = LANGUAGES[lang]
 db = DATABASE[lang]
 
 st.markdown("---")
-# รองรับทั้งการอัปโหลดไฟล์และการถ่ายภาพจากกล้อง (camera_input)
-upload_method = st.radio("เลือกวิธีป้อนรูปภาพ / Select input method:", ["📁 อัปโหลดไฟล์รูปภาพ (Upload File)", "📷 ถ่ายภาพด้วยกล้อง (Camera)"])
-
-uploaded_file = None
-if "อัปโหลด" in upload_method:
-    uploaded_file = st.file_uploader(t["upload_label"], type=["jpg", "jpeg", "png"])
-else:
-    uploaded_file = st.camera_input(t["upload_label"])
+# ใช้ file_uploader ตัวเดียว (สามารถกดเลือกรูปจากอัลบั้มหรือถ่ายรูปด้วยกล้องจากเมนูของระบบได้ทันทีโดยไม่ซ้ำซ้อน)
+uploaded_file = st.file_uploader(t["upload_label"], type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
     img = Image.open(uploaded_file)
